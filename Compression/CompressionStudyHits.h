@@ -35,6 +35,9 @@ namespace compress {
     /// Close Algorithm (maybe to write trees & such)
     void EndProcess(TFile* fout=nullptr);
 
+    /// Set threshold
+    void setThreshold(double t) { _threshold = t; }
+
   protected:
 
 

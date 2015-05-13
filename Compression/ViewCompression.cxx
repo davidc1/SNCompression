@@ -5,6 +5,21 @@
 
 namespace larlite {
 
+  ViewCompression::ViewCompression()
+    : _compress_algo(nullptr)
+    , _current_event_wf(nullptr)
+    , _c1(nullptr)
+    , _p1(nullptr)
+    , _hInWF(nullptr)
+    , _hOutWF(nullptr)
+    , _hInBase(nullptr)
+    , _hInVar(nullptr)
+  {
+    _name="ViewCompression";
+    _fout=0;
+    _baseline = false;
+  };
+
   bool ViewCompression::initialize() {
 
     _evtNum = 0;

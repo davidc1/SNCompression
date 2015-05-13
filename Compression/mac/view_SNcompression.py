@@ -1,40 +1,44 @@
 # Load libraries
-import ROOT, sys, os
+import sys, os
 from ROOT import *
 from ROOT import gSystem
 from ROOT import larlite as fmwk
 from ROOT import compress
 
+# Create ana_processor instance
+my_proc=fmwk.ana_processor()
 
-filename = sys.argv[1]
-
-my_proc = fmwk.ana_processor()
-
+# Specify IO mode
+#my_proc.set_io_mode(fmwk.storage_manager.kBOTH)
+#my_proc.set_io_mode(fmwk.storage_manager.kWRITE)
 my_proc.set_io_mode(fmwk.storage_manager.kREAD)
 
-#my_proc.set_data_to_read(fmwk.data.kRawDigit,"daq")
 
-my_proc.add_input_file(filename)
+for x in xrange(len(sys.argv)-2):
+    my_proc.add_input_file(sys.argv[x+1])
 
-#is there a way to disable ana_proc from creating an output file at all?
-my_proc.set_ana_output_file("")
+
+# Set output root file: this is a separate root file in which your
+# analysis module can store anything such as histograms, your own TTree, etc.
+my_proc.set_ana_output_file("Anaoutput.root")
+my_proc.set_output_file("compressedWFs.root")
 
 compAna=fmwk.ViewCompression()
 compAna.suppressBaseline(True)
 #add Compression Algorithm
+print "hello"
 compAlgo = compress.CompressionAlgosncompress()
+print "hello"
 compAlgo.SetDebug(False)
 compAlgo.SetVerbose(True)
 compAlgo.SetFillTree(False)
 compAlgo.SetBlockSize(64)
 compAlgo.SetBaselineThresh(0.75)
 compAlgo.SetVarianceThresh(1)
-#f = 3./4
 thresh = float(sys.argv[-1])
 compAlgo.SetCompressThresh(-thresh,thresh,thresh)
 compAlgo.SetMaxADC(4095)
 compAlgo.SetUVYplaneBuffer(30,55,15,20,15,10);
-#compAlgo.SetUVYplaneBuffer(15,20,15,15,15,15);
 compAna.SetCompressAlgo(compAlgo)
 
 my_proc.add_process(compAna)

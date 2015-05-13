@@ -66,7 +66,6 @@ namespace compress {
     int Nabove = 0;
 
     for (t = range.first; t < range.second; t++){
-      //for (size_t adc_index=0; adc_index < wf.size(); adc_index++){
 	int adcs = *t;
 	if ( PassThreshold(adcs,baseline) ) {
 	  active = true;

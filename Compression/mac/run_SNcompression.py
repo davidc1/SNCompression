@@ -1,5 +1,5 @@
 # Load libraries
-import os, ROOT, sys
+import sys, os
 from ROOT import *
 from ROOT import gSystem
 from ROOT import larlite as fmwk
@@ -32,7 +32,6 @@ my_proc.set_output_file("compressedWFs.root")
 
 compAna=fmwk.ExecuteCompression()
 compAna.SetSaveOutput(False)
-
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
@@ -49,6 +48,7 @@ compAna.SetCompressAlgo(compAlgo)
 
 #add study Algorithm
 compStudy = compress.CompressionStudyHits()
+compStudy.setThreshold(3.)
 
 compAna.SetCompressAlgo(compAlgo)
 compAna.SetCompressStudy(compStudy)

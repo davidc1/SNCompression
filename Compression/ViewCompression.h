@@ -34,7 +34,7 @@ namespace larlite {
   public:
     
     /// Default constructor
-    ViewCompression(){ _name="ViewCompression"; _fout=0; _compress_algo=0; _c1 = nullptr; _p1 = nullptr; _hInWF = nullptr; _hOutWF = nullptr; _hInBase = nullptr; _hInVar = nullptr; _baseline = false; };
+    ViewCompression();
     
     /// Default destructor
     virtual ~ViewCompression(){};
@@ -138,8 +138,6 @@ namespace larlite {
 
     /// Number of output waveforms from original input waveform
     int _NumOutWFs;
-
-    TH1S *_hMaxADC;
 
   };
 }
