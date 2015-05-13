@@ -33,7 +33,7 @@ namespace larlite {
   public:
 
     /// Default constructor
-    ExecuteCompression(){ _name="ExecuteCompression"; _fout=0; _compress_algo = 0; _saveOutput=false; };
+    ExecuteCompression();
 
     /// Default destructor
     virtual ~ExecuteCompression(){};

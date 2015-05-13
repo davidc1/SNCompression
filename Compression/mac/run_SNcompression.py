@@ -1,17 +1,9 @@
-#
-# Example PyROOT script to run analysis module, ana_base.
-# The usage is same for inherited analysis class instance.
-#
-
 # Load libraries
 import os, ROOT, sys
+from ROOT import *
 from ROOT import gSystem
 from ROOT import larlite as fmwk
 from ROOT import compress
-
-# Now import ana_processor & your class. For this example, ana_base.
-
-infilename = sys.argv[1]
 
 # Create ana_processor instance
 my_proc=fmwk.ana_processor()
@@ -22,10 +14,6 @@ my_proc=fmwk.ana_processor()
 my_proc.set_io_mode(fmwk.storage_manager.kREAD)
 
 
-# Set input root file: this is decoder output root file.
-# This time, we use a sample file prepared.
-#my_proc.add_input_file("./../../../NevisDecoder/Decoder/mac/xmit_subrun_2014_01_13_1_trigger.root")
-# Set input root file
 for x in xrange(len(sys.argv)-2):
     my_proc.add_input_file(sys.argv[x+1])
 
@@ -48,6 +36,7 @@ compAna.SetSaveOutput(False)
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
+compAlgo.SetVerbose(False)
 compAlgo.SetFillTree(False)
 compAlgo.SetBlockSize(64)
 compAlgo.SetBaselineThresh(0.75)
@@ -70,6 +59,6 @@ my_proc.add_process(compAna)
 
 # Let's run it.
 
-my_proc.run(0,2)
+my_proc.run()
 
 # done!

@@ -77,7 +77,7 @@ namespace compress {
     _pl = mode;
 
     // how many blocks? we need to make sure we don't overflow the window length
-    int nsegments = int(waveform.size()/(float(_block)))-1;
+    int nsegments = int(waveform.size()/(float(_block)))-3;
 
     for(int pos = 0; pos < nsegments; pos+= 3){
 

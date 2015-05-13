@@ -5,6 +5,14 @@
 
 namespace larlite {
 
+  ExecuteCompression::ExecuteCompression()
+    : _compress_algo(nullptr)
+    , _compress_tree(nullptr)
+  {
+    _fout = 0;
+    _saveOutput = false;    
+  }
+
   bool ExecuteCompression::initialize() {
     
     // Initalize Histogram that tracks compression factor
