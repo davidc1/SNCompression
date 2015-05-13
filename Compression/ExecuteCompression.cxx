@@ -64,7 +64,7 @@ namespace larlite {
     // Loop over all waveforms
     _loopwatch.Start();
     for (size_t i=0; i<event_wf->size(); i++){
-      
+
       //get tpc_data
       larlite::rawdigit* tpc_data = (&(event_wf->at(i)));      
       //Check for empty waveforms!

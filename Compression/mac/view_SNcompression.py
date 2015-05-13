@@ -20,8 +20,8 @@ for x in xrange(len(sys.argv)-2):
 
 # Set output root file: this is a separate root file in which your
 # analysis module can store anything such as histograms, your own TTree, etc.
-my_proc.set_ana_output_file("Anaoutput.root")
-my_proc.set_output_file("compressedWFs.root")
+my_proc.set_ana_output_file("aaa.root")
+my_proc.set_output_file("bbb.root")
 
 compAna=fmwk.ViewCompression()
 compAna.suppressBaseline(True)
@@ -59,7 +59,7 @@ while my_proc.process_event():
 
     for x in range(compAna.GetNumWFs()):
         compAna.processWF()
-        if (compAna.GetNumOutWFs() >= 1):
+        if (compAna.GetNumOutWFs() >= 0):
             print "%i Waveforms found"%compAna.GetNumOutWFs()
             for pad in xrange(1,3,1):
                 c1.cd(pad)

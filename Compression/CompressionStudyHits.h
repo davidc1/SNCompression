@@ -41,19 +41,28 @@ namespace compress {
   protected:
 
 
-    void findHits(const std::pair<tick,tick>& range, bool in);
+  void matchHits(const std::pair<tick,tick>& inrange,
+		 const std::vector<std::pair<tick,tick> >& outranges);
 
-    bool PassThreshold(double thisADC, double base);
+  void findHits(const std::pair<tick,tick>& range, bool in);
 
-    double _threshold;
-    
-    // TTree and variable for TTree
-    TTree *_in_study_tree;
-    TTree *_out_study_tree;
-    double _hit_peak; // hit max Q for waveforms
-    double _hit_area; // hit area Q for waveforms
-    int    _pl; // Plane
-
+  // has the tick we are examining been saved in the output? return boolean
+  bool isTickInOutput(const compress::tick& t, const std::vector<std::pair<tick,tick> >& outranges, size_t& currentPair);
+  
+  bool PassThreshold(double thisADC, double base);
+  
+  double _threshold;
+  
+  // TTree and variable for TTree
+  TTree *_in_study_tree;
+  TTree *_out_study_tree;
+  double _hit_peak; // hit max Q for waveforms
+  double _hit_area; // hit area Q for waveforms
+  double _hit_peakOut; // hit max Q for output waveforms
+  double _hit_areaOut; // hit area Q for output waveforms
+  int    _pl;       // Plane
+  int    _isSaved;  // is the tick saved in the output wf?
+  
   };
 
 }
