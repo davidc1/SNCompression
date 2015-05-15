@@ -18,10 +18,14 @@
 #include "Analysis/ana_base.h"
 #include "CompressionAlgoBase.h"
 #include "CompressionStudyBase.h"
+#include "CompressionStudyIDEs.h"
+#include "ViewCompression.h"
 #include "LArUtil/Geometry.h"
 #include "DataFormat/rawdigit.h"
+#include "DataFormat/simch.h"
 #include "TH1D.h"
 #include <TStopwatch.h>
+#include <map>
 
 namespace larlite {
   /**
@@ -59,6 +63,12 @@ namespace larlite {
     /// Set Compression Study
     void SetCompressStudy(compress::CompressionStudyBase* study) { _compress_study = study; }
 
+    /// Set Compression Viewer
+    void SetCompressViewer(compress::ViewCompression* viewer) { _compress_view = viewer; }
+
+    /// Set IDE study algorithm
+    void SetIDEStudy(compress::CompressionStudyIDEs* ide) { _ide_study = ide; }
+
     /// Calculate compression: keep holders for number of ticks in original waveform and number of ticks in compressed waveforms
     void CalculateCompression(const std::vector<short> &beforeADCs,
 			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges,
@@ -67,7 +77,19 @@ namespace larlite {
     /// Decide here if to save output
     void SetSaveOutput(bool on) { _saveOutput = on; }
 
-    protected:
+    /// function that calls the compression algo
+    void ApplyCompression(const size_t i);
+
+    /// get number of waveforms saved
+    int GetNumWFs() { return _event_wf->size(); }
+
+    /// fill map for simch info
+    void fillSimchMap(const larlite::event_simch* ev_simch);
+
+    /// use simch info?
+    void SetUseSimch(bool on) { _use_simch = on; }
+
+  protected:
 
     /// Now filll output WFs information into larlite data product so that we can write to output
     void SwapData(const larlite::rawdigit* tpc_data,
@@ -78,12 +100,30 @@ namespace larlite {
 
     /// Compression Study function -> do histograms...whatever
     compress::CompressionStudyBase* _compress_study;
+
+    /// compression viewer...shows waveform compression
+    compress::ViewCompression* _compress_view;
+
+    /// compression ide study
+    compress::CompressionStudyIDEs* _ide_study;
+
+    /// holder for input rawdigit
+    larlite::event_rawdigit* _event_wf;
     
     /// event_rawdigit: temporary holder for output WFs
     larlite::event_rawdigit _out_event_wf;
 
+    /// event simch info
+    larlite::event_simch* _event_simch;
+
+    /// simch map
+    std::map<unsigned int,std::vector<std::pair<unsigned short, double> > >_simchMap;
+
     // Boolean to decide whether to save output
     bool _saveOutput;
+
+    // boolean to decide if to use simch info
+    bool _use_simch;
 
     /// holder for the # of ticks in the original waveforms
     double _inTicks;
@@ -104,7 +144,7 @@ namespace larlite {
     TStopwatch _evtwatch; // full event time
     TStopwatch _loopwatch;
     TStopwatch _watch;
-    double _time_loop, _time_get, _time_algo, _time_study, _time_calc, _time_swap;
+    double _time_loop, _time_get, _time_algo, _time_study, _time_calc, _time_swap, _time_ide;
 
 
   };

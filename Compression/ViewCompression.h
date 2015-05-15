@@ -15,21 +15,18 @@
 #ifndef VIEWCOMPRESSION_H
 #define VIEWCOMPRESSION_H
 
-#include "Analysis/ana_base.h"
-#include "CompressionAlgoBase.h"
-#include "LArUtil/Geometry.h"
-#include "DataFormat/rawdigit.h"
 #include <TH1D.h>
+#include "CompressionAlgoBase.h"
 #include <TH1D.h>
 #include <TCanvas.h>
 #include <TPad.h>
 
-namespace larlite {
+namespace compress {
   /**
      \class ViewCompression
      User custom analysis class made by David Caratelli
   */
-  class ViewCompression : public ana_base{
+  class ViewCompression {
     
   public:
     
@@ -39,25 +36,13 @@ namespace larlite {
     /// Default destructor
     virtual ~ViewCompression(){};
     
-    virtual bool initialize();
-    
-    virtual bool analyze(storage_manager* storage);
-    
-    virtual bool finalize();
-    
     /// PrepareCanvas
     void PrepareCanvas() { _c1 = new TCanvas("c1", "canvas", 900, 900); _c1->Divide(1,2); }
     
     void UpdateCanvas() { _c1->cd(1); _hInWF->Draw(); _c1->cd(2); _hOutWF->Draw(); }
-    
-    /// Set Compression Algorithm
-    void SetCompressAlgo(compress::CompressionAlgoBase* algo) { _compress_algo = algo; }
-    
+
     /// Set boolean whether to use baseline or not 
     void suppressBaseline(bool on) { _baseline = on; } 
-    
-    /// Function to process single waveform and return Canvas
-    void processWF();
     
     /// Get Number of WFs in event 
     int GetNumWFs() { return _numWFs; }
@@ -67,20 +52,23 @@ namespace larlite {
     
     //// Clear Histograms
     //    void ClearHistograms() { _hInWF=0; _hOutWF=0; }
-    void ClearHistograms() { delete _hInWF; delete _hOutWF; delete _hInBase; delete _hInVar; }
+    void ClearHistograms() { delete _hInWF; delete _hOutWF; delete _hInBase; delete _hInVar; delete _hIDEs; }
     
     /// Fill Histograms with new and old waveforms
-    void FillHistograms(const std::vector<short> ADCwaveform,
-			const std::vector<std::pair< compress::tick, compress::tick> > ranges,
-			//std::vector<std::vector<unsigned short> > compressOutput,
-			//std::vector<int> outputTimes,
-			UShort_t ch,
-			UChar_t pl);
+    void FillHistograms(const std::pair<compress::tick,compress::tick>& range,
+			const std::vector<std::pair< compress::tick, compress::tick> >& ranges,
+			int evt, UShort_t ch, UChar_t pl);
 
-  void FillBaseVarHistos(const std::vector<double>& base,
-			 const std::vector<double>& var,
-			 UShort_t ch,
-			 UChar_t pl);
+    /// Fill IDE vector
+    void FillIDEs(const std::vector<std::pair<unsigned short, double> >& IDEs,
+		  int evt, UShort_t ch, UChar_t pl, size_t ADClen);
+
+    /// reset IDE histogram
+    void ResetIDEs(int evt, UShort_t ch, UChar_t pl, size_t ADClen);
+
+    void FillBaseVarHistos(const std::vector<double>& base,
+			   const std::vector<double>& var,
+			   int evt, UShort_t ch, UChar_t pl);
 
     /// Get Histograms for python script
     const TH1D* GetHistos(int which) const {
@@ -100,6 +88,9 @@ namespace larlite {
 
     /// Get variance histo
     const TH1D* GetVarHisto() const { return _hInVar; }
+    
+    /// get IDE histo
+    const TH1D* GetIDEHisto() const { return _hIDEs; }
 
     protected:
 
@@ -110,12 +101,6 @@ namespace larlite {
     bool _baseline;
     /// approximate baseline value
     double _base;
-
-    /// Compression Algorithm Object...performs compression
-    compress::CompressionAlgoBase* _compress_algo;
-
-    /// event_wf for this event
-    larlite::event_rawdigit *_current_event_wf;
 
     /// Main Canvas
     TCanvas* _c1;
@@ -129,6 +114,8 @@ namespace larlite {
     TH1D* _hInVar;
     /// Output WF Histo
     TH1D* _hOutWF;
+    /// IDE histogram
+    TH1D* _hIDEs;
 
     /// Keep track of which waveform we are looking at
     int _currentWF;

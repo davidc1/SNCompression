@@ -3,141 +3,55 @@
 
 #include "ViewCompression.h"
 
-namespace larlite {
+namespace compress {
 
   ViewCompression::ViewCompression()
-    : _compress_algo(nullptr)
-    , _current_event_wf(nullptr)
-    , _c1(nullptr)
+    : _c1(nullptr)
     , _p1(nullptr)
     , _hInWF(nullptr)
     , _hOutWF(nullptr)
     , _hInBase(nullptr)
     , _hInVar(nullptr)
+    , _hIDEs(nullptr)
   {
-    _name="ViewCompression";
-    _fout=0;
     _baseline = false;
   };
 
-  bool ViewCompression::initialize() {
+  void ViewCompression::FillHistograms(const std::pair<compress::tick,compress::tick>& range,
+				       const std::vector<std::pair< compress::tick, compress::tick> >& ranges,
+				       int evt, UShort_t ch, UChar_t pl){
 
-    _evtNum = 0;
+    // delete any histograms if they alerady existed
+    if (_hInWF) { delete _hInWF; }
+    if (_hOutWF) { delete _hOutWF; }
 
-    return true;
-  }
-  
-  bool ViewCompression::analyze(storage_manager* storage) {
+    if (pl == 2) { _base = 400; }
+    else { _base = 2048; }
 
-    //reset WF counter
-    _currentWF = 0;
-
-    // If no compression algorithm has been defined, skip
-    if ( _compress_algo == 0 ){
-      print(msg::kERROR,__FUNCTION__,"Compression Algorithm Not Set! Exiting");
-      return false;
-    }
-
-    // Otherwise Get RawDigits and execute compression
-    auto event_wf = storage->get_data<event_rawdigit>("daq");
-    // If raw_digits object is empty -> exit
-    if(!event_wf) {
-      print(msg::kERROR,__FUNCTION__,"Data storage did not find associated waveforms!");
-      return false;
-    }
-
-    _numWFs = event_wf->size();
-
-    _current_event_wf = event_wf;
-
-    _evtNum += 1;
-    
-    return true;
-  }
-  
-  bool ViewCompression::finalize() {
-    
-    return true;
-  }
-  
-  
-  void ViewCompression::processWF(){
-
-    
-    //get rawdigit
-    larlite::rawdigit* tpc_data = (&(_current_event_wf->at(_currentWF)));      
-
-    // Figure out channel's plane:
-    // used because different planes will have different "buffers"
-    UInt_t ch = tpc_data->Channel();
-    int pl = larutil::Geometry::GetME()->ChannelToPlane(ch);
-
-    // reset compression
-    _compress_algo->Reset();
-    //finally, apply compression..
-    const std::vector<short> &ADCwaveform = tpc_data->ADCs();
-    _compress_algo->ApplyCompression(ADCwaveform,pl,ch);
-    auto const ranges = _compress_algo->GetOutputRanges();
-    
     _NumOutWFs = ranges.size();
-
-    // calculate an approximate baseline
-    _base = 0;
-    if (_baseline){
-      for (size_t i=0; i < 200; i++)
-	_base += ADCwaveform[i];
-      _base /= 200.;
-    }
-    //clear histograms
-    ClearHistograms();
-    //now fill histograms
-    //FillHistograms(ADCwaveform, compressOutput, outTimes, ch, pl);
-    FillHistograms(ADCwaveform, ranges, ch, pl);
-    //fill baseline & variance histograms
-    FillBaseVarHistos(_compress_algo->GetBaselines(),_compress_algo->GetVariances(),ch,pl);
-
-    _currentWF += 1;
     
-    return;
-  }
-  
+    _hInWF = new TH1D("hInWF", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",evt, pl, ch),
+		      std::distance(range.first,range.second), 0, std::distance(range.first,range.second));
 
-  void ViewCompression::FillHistograms(const std::vector<short> ADCwaveform,
-				       const std::vector<std::pair< compress::tick, compress::tick> > ranges,
-				       UShort_t ch,
-				       UChar_t pl){
-    
-    _hInWF = new TH1D("hInWF", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",_evtNum, pl, ch),
-		      ADCwaveform.size(), 0, ADCwaveform.size());
-
-    _hOutWF = new TH1D("hOutWF", Form("Event %i - Pl %i - Ch %i - Output WF; Time Tick; ADCs",_evtNum, pl, ch),
-		       ADCwaveform.size(), 0, ADCwaveform.size());
+    _hOutWF = new TH1D("hOutWF", Form("Event %i - Pl %i - Ch %i - Output WF; Time Tick; ADCs",evt, pl, ch),
+		       std::distance(range.first,range.second), 0, std::distance(range.first,range.second));
 
     _hInWF->SetTitleOffset(0.8,"X");
     _hOutWF->SetTitleOffset(0.8,"X");
     
-    for (size_t n=0; n < ADCwaveform.size(); n++)
-      _hInWF->SetBinContent(n+1, ADCwaveform.at(n)-_base);
+    for (tick t = range.first; t < range.second; t++){
+      _hInWF->SetBinContent(std::distance(range.first,t)+1, *t-_base);
+      //_hOutWF->SetBinContent(std::distance(range.first,t)+1, 0.);
+    }
 
-    //measure a baseline to place a temporary holder in output histogram
-    double baseline = 0.;
-    for (int tt=0; tt < 10; tt++)
-      baseline += ADCwaveform.at(tt);
-    baseline /= 10.;
-    int base = int(baseline);
-    for (size_t m=0; m < ADCwaveform.size(); m++)
-      _hOutWF->SetBinContent(m+1, base-_base);
-
-    // iterator to beginning of input waveform
-    const compress::tick begin = _compress_algo->GetInputBegin();
     
     for (size_t j=0; j < ranges.size(); j++){
-      std::cout << "Range: [" <<  int(ranges.at(j).first-begin) << ", "
-		<< int(ranges.at(j).second-begin)
-		<< "]" << std::endl;
-      compress::tick t;
+      std::cout << "Range: [" <<  std::distance(range.first,ranges.at(j).first) << ", "
+      		<< std::distance(range.first,ranges.at(j).second)
+      		<< "]" << std::endl;
+      tick t;
       for (t = ranges.at(j).first; t < ranges.at(j).second; t++)
-	_hOutWF->SetBinContent( int(t-begin), *t-_base);
+	_hOutWF->SetBinContent( std::distance(range.first,t), *t-_base);
     }
     _hInWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
     _hOutWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
@@ -146,19 +60,58 @@ namespace larlite {
   }
 
 
+  void ViewCompression::ResetIDEs(int evt, UShort_t ch, UChar_t pl, size_t ADClen)
+  {
+
+    if (_hIDEs) { delete _hIDEs; }
+
+    _hIDEs = new TH1D("hIDEs", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",evt, pl, ch),
+		      ADClen, 0, ADClen);
+    
+    // first fill all with zeros
+    for (size_t i=0; i < ADClen; i++)
+      _hIDEs->SetBinContent(i+1,0);
+
+    return;
+  }
+
+  void ViewCompression::FillIDEs(const std::vector<std::pair<unsigned short, double> >& IDEs,
+				 int evt, UShort_t ch, UChar_t pl, size_t ADClen)
+  {
+
+    if (_hIDEs) { delete _hIDEs; }
+
+    _hIDEs = new TH1D("hIDEs", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",evt, pl, ch),
+		      ADClen, 0, ADClen);
+    
+    // first fill all with zeros
+    for (size_t i=0; i < ADClen; i++)
+      _hIDEs->SetBinContent(i+1,0);
+    
+    // now loop through IDEs filling appropriaate values
+    for (auto &ide : IDEs)
+      _hIDEs->SetBinContent(ide.first,ide.second);
+    
+    return;
+  }
+
   void ViewCompression::FillBaseVarHistos(const std::vector<double>& base,
 					  const std::vector<double>& var,
-					  UShort_t ch,
-					  UChar_t pl){
+					  int evt, UShort_t ch, UChar_t pl)
+  {
+
+    // delete histograms if they existed already
+    if (_hInBase) { delete _hInBase; }
+    if (_hInVar) { delete _hInVar; }
     
     // block size is 64
     int block = 64;
     int nblocks = base.size();
 
-    _hInBase = new TH1D("hInBase", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; Baseline",_evtNum, pl, ch),
+    _hInBase = new TH1D("hInBase", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; Baseline",evt, pl, ch),
 		      block*nblocks, 0, block*nblocks);
 
-    _hInVar = new TH1D("hOutVar", Form("Event %i - Pl %i - Ch %i - Output WF; Time Tick; Variance",_evtNum, pl, ch),
+    _hInVar = new TH1D("hOutVar", Form("Event %i - Pl %i - Ch %i - Output WF; Time Tick; Variance",evt, pl, ch),
 		       block*nblocks, 0, block*nblocks);
 
     _hInWF->SetTitleOffset(0.8,"X");

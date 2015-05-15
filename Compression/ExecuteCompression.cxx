@@ -7,10 +7,14 @@ namespace larlite {
 
   ExecuteCompression::ExecuteCompression()
     : _compress_algo(nullptr)
+    , _compress_study(nullptr)
+    , _compress_view(nullptr)
+    , _ide_study(nullptr)
     , _compress_tree(nullptr)
   {
     _fout = 0;
     _saveOutput = false;    
+    _use_simch = false;
   }
 
   bool ExecuteCompression::initialize() {
@@ -31,7 +35,7 @@ namespace larlite {
 
     _evt = 0;
 
-    _time_loop = _time_get = _time_algo = _time_study = _time_calc = _time_swap = 0;
+    _time_loop = _time_get = _time_algo = _time_study = _time_calc = _time_swap = _time_ide = 0;
 
     _evtwatch.Start();
 
@@ -40,6 +44,8 @@ namespace larlite {
   
   bool ExecuteCompression::analyze(storage_manager* storage) {
 
+    _evt += 1;
+
     // If no compression algorithm has been defined, skip
     if ( _compress_algo == 0 ){
       print(msg::kERROR,__FUNCTION__,"Compression Algorithm Not Set! Exiting");
@@ -47,11 +53,18 @@ namespace larlite {
     }
 
     // Otherwise Get RawDigits and execute compression
-    auto event_wf = storage->get_data<event_rawdigit>("daq");
+    _event_wf = storage->get_data<event_rawdigit>("daq");
     // If raw_digits object is empty -> exit
-    if(!event_wf) {
+    if(!_event_wf) {
       print(msg::kERROR,__FUNCTION__,"Data storage did not find associated waveforms!");
       return false;
+    }
+
+    // get simch
+    if (_use_simch){
+      _event_simch = storage->get_data<event_simch>("largeant");
+      // make a map: channel -> associated simch
+      fillSimchMap(_event_simch);
     }
 
     // clear place-holder for new, compressed, waveforms
@@ -60,53 +73,16 @@ namespace larlite {
     // reset variables that hold compression factor
     _inTicks  = 0;
     _outTicks = 0;
+
+    // if we want to use the viewer -> skip this
+    if (_compress_view)
+      return true;
     
     // Loop over all waveforms
     _loopwatch.Start();
-    for (size_t i=0; i<event_wf->size(); i++){
-
+    for (size_t i=0; i<_event_wf->size(); i++){
       //get tpc_data
-      larlite::rawdigit* tpc_data = (&(event_wf->at(i)));      
-      //Check for empty waveforms!
-      if(tpc_data->ADCs().size()<1){
-	print(msg::kERROR,__FUNCTION__,
-	      Form("Found 0-length waveform: Event %d ... Ch. %d",event_wf->event_id(),tpc_data->Channel()));
-	continue;
-      }//if wf size < 1
-
-      // Figure out channel's plane:
-      // used because different planes will have different "buffers"
-      UInt_t ch = tpc_data->Channel();
-      int pl = larutil::Geometry::GetME()->ChannelToPlane(ch);
-
-      // finally, apply compression:
-      // *-------------------------*
-      // 1) Convert tpc_data object to just the vector of shorts which make up the ADC ticks
-      _watch.Start();
-      const std::vector<short> ADCwaveform = tpc_data->ADCs();
-      _time_get += _watch.RealTime();
-      // 2) Now apply the compression algorithm. _compress_algo is an instance of CompressionAlgoBase
-      _watch.Start();
-      _compress_algo->ApplyCompression(ADCwaveform,pl,ch);
-      _time_algo += _watch.RealTime();
-      // 3) Retrieve output ranges saved
-      auto const ranges = _compress_algo->GetOutputRanges();
-      // 6) Study the Compression results for this channel
-      _watch.Start();
-      _compress_study->StudyCompression(ADCwaveform, ranges, pl);
-      _time_study += _watch.RealTime();
-      // 7) Calculate compression factor [ for now Ticks After / Ticks Before ]
-      _watch.Start();
-      CalculateCompression(ADCwaveform, ranges, pl);
-      _time_calc += _watch.RealTime();
-      // 8) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
-      _compress_algo->Reset();
-      // 9) Replace .root data file *event_wf* with new waveforms
-      _watch.Start();
-      if (_saveOutput)
-	SwapData(tpc_data, ranges);
-      _time_swap += _watch.RealTime();
-	
+      ApplyCompression(i);
     }//for all waveforms
     _time_loop += _loopwatch.RealTime();
 
@@ -117,13 +93,12 @@ namespace larlite {
     _compress_tree->Fill();
     _NplU = _NplV = _NplY = 0;
     _compressionU = _compressionV = _compressionY = 0;
-    _evt += 1;
     
     //now take new WFs and place in event_wf vector
     if (_saveOutput){
-      event_wf->clear();
+      _event_wf->clear();
       for (size_t m=0; m < _out_event_wf.size(); m++)
-	event_wf->push_back(_out_event_wf.at(m));
+	_event_wf->push_back(_out_event_wf.at(m));
     }
     return true;
   }
@@ -148,13 +123,95 @@ namespace larlite {
 	      << "  \033[95m<<Calc Time>>\033[00m : " << _time_calc << " [s] ... or "
 	      << _time_calc/_evt << " [s/evt]" << std::endl
 	      << "  \033[95m<<Swap Time>>\033[00m : " << _time_swap << " [s] ... or "
-	      << _time_swap/_evt << " [s/evt]" << std::endl;
+	      << _time_swap/_evt << " [s/evt]" << std::endl
+	      << "  \033[95m<<IDEs Time>>\033[00m : " << _time_ide << " [s] ... or "
+	      << _time_ide/_evt << " [s/evt]" << std::endl;
 
-    _compress_algo->EndProcess(_fout);
-    _compress_study->EndProcess(_fout);
+    if (_compress_algo)
+      _compress_algo->EndProcess(_fout);
+    if (_compress_study)
+      _compress_study->EndProcess(_fout);
+    if (_ide_study)
+      _ide_study->EndProcess(_fout);
+
     _compress_tree->Write();
 
     return true;
+  }
+
+
+  // function where compression is applied on a single wf
+  void ExecuteCompression::ApplyCompression(const size_t i)
+  {
+
+    const larlite::rawdigit* rawwf = &(_event_wf->at(i));
+
+      //Check for empty waveforms!
+    if(rawwf->ADCs().size()<1){
+      print(msg::kERROR,__FUNCTION__,
+	    Form("Found 0-length waveform: Ch. %d",rawwf->Channel()));
+      return;
+    }//if wf size < 1
+
+    // Figure out channel's plane:
+    // used because different planes will have different "buffers"
+    UInt_t ch = rawwf->Channel();
+    int pl = larutil::Geometry::GetME()->ChannelToPlane(ch);
+    
+    // finally, apply compression:
+    // *-------------------------*
+    // 1) Convert tpc_data object to just the vector of shorts which make up the ADC ticks
+    _watch.Start();
+    const std::vector<short> ADCwaveformL = rawwf->ADCs();
+    // cut size so that 3 blocks fit perfectly
+    int nblocks = ADCwaveformL.size()/(3*64);
+    std::vector<short>::const_iterator first = ADCwaveformL.begin();
+    std::vector<short>::const_iterator last  = ADCwaveformL.begin()+(3*64*nblocks);
+    std::vector<short> ADCwaveform(first,last);
+    _time_get += _watch.RealTime();
+    // 2) Now apply the compression algorithm. _compress_algo is an instance of CompressionAlgoBase
+    _watch.Start();
+    _compress_algo->ApplyCompression(ADCwaveform,pl,ch);
+    _time_algo += _watch.RealTime();
+    // 3) Retrieve output ranges saved
+    auto const& ranges = _compress_algo->GetOutputRanges();
+    // 6) Study the Compression results for this channel
+    _watch.Start();
+    if (_compress_study)
+      _compress_study->StudyCompression(ADCwaveform, ranges, pl);
+    _time_study += _watch.RealTime();
+    // 7) View compression if viewer is set
+    if (_compress_view){
+      if (_simchMap.find(ch) != _simchMap.end())
+	_compress_view->FillIDEs(_simchMap[ch],_evt,ch,pl,
+				 std::distance(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()));
+      else { _compress_view->ResetIDEs(_evt,ch,pl,
+				       std::distance(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd())); }
+      _compress_view->FillHistograms(std::make_pair(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()),
+				     ranges,_evt,ch,pl);
+      _compress_view->FillBaseVarHistos(_compress_algo->GetBaselines(),_compress_algo->GetVariances(),_evt,ch,pl);
+    }
+    // 8) study IDEs if algorithm was selected
+    if ( (_simchMap.find(ch) != _simchMap.end()) and (_ide_study) ){    
+      _watch.Start();
+      _ide_study->StudyCompression(_simchMap[ch],
+				   std::make_pair(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()),
+				   ranges,pl,ch,_evt);
+      _time_ide += _watch.RealTime();
+    }
+    // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
+    _watch.Start();
+    CalculateCompression(ADCwaveform, ranges, pl);
+    _time_calc += _watch.RealTime();
+    // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
+    _compress_algo->Reset();
+    // 11) Replace .root data file *event_wf* with new waveforms
+    _watch.Start();
+    if (_saveOutput)
+      SwapData(rawwf, ranges);
+    _time_swap += _watch.RealTime();
+    
+    return;
   }
 
   void ExecuteCompression::SwapData(const larlite::rawdigit *tpc_data,
@@ -212,6 +269,33 @@ namespace larlite {
       std::cout << "What plane? Error?" << std::endl;
     
     _compression += outTicks/inTicks;
+
+    return;
+  }
+
+
+  // Fill Simch Map to get simchannels associated with a channel
+  void ExecuteCompression::fillSimchMap(const larlite::event_simch* ev_simch)
+  {
+
+    _simchMap.clear();
+    //    _simchMap.reserve(_event_wf->size());
+    for (size_t i=0; i < ev_simch->size(); i++){
+      auto const simch = ev_simch->at(i);
+      // get map of TDC -> vector<ides> for this simch object
+      const std::map<unsigned short, std::vector<larlite::ide> > ideMap = simch.TDCIDEMap();
+      // create a vector which connects TCD to energy of ide
+      std::vector<std::pair<unsigned short,double> > _ide_v;
+      std::map<unsigned short, std::vector<larlite::ide> >::const_iterator it;
+      for (it = ideMap.begin(); it != ideMap.end(); it++){
+	double Etot = 0; // total energy at this tick
+	auto const idevec = it->second;
+	for (auto const& ide : idevec)
+	  Etot += ide.energy;
+	_ide_v.push_back(std::make_pair(it->first,Etot));
+      }
+      _simchMap[simch.Channel()] = _ide_v;
+    }// for all simchannel objects
 
     return;
   }

@@ -13,7 +13,9 @@ namespace compress {
   {
     
     // Threshold to decleare a "hit"
-    _threshold = 5;
+    _threshold = 3;
+    // consecutive ticks for a hit
+    _consecutive = 3;
 
     if (_in_study_tree) { delete _in_study_tree; }
     _in_study_tree = new TTree("in_study_tree","Input Study Tree");
@@ -22,6 +24,7 @@ namespace compress {
     _in_study_tree->Branch("_hit_peakOut",&_hit_peakOut,"hit_peakOut/D");
     _in_study_tree->Branch("_hit_areaOut",&_hit_areaOut,"hit_areaOut/D");
     _in_study_tree->Branch("_isSaved",&_isSaved,"isSaved/I");
+    _in_study_tree->Branch("_baseline",&_baseline,"baseline/D");
     _in_study_tree->Branch("_pl",&_pl,"pl/I");
     if (_out_study_tree) { delete _out_study_tree; }
     _out_study_tree = new TTree("out_study_tree","Output Study Tree");
@@ -63,11 +66,31 @@ namespace compress {
 
     // iterator
     compress::tick t;
-    // Baseline for the waveform
+
+    // find the Baseline for the waveform
+    // average 20 ticks and keep baseline once we find
+    // a stable region (below some variance cut)
+    _baseline = 0;
     double baseline = 0;
-    for (t = inrange.first; t < inrange.first+3; t++)
-      baseline += *t;
-    baseline /= 3.;
+    double variance = 0;
+    int offset = 0;
+    while (_baseline == 0){
+      for (t = inrange.first+offset; t < inrange.first+20+offset; t++)
+	baseline += *t;
+      baseline /= 20.;
+      for (t = inrange.first+offset; t < inrange.first+20+offset; t++)
+	variance += (*t-baseline)*(*t-baseline);
+      variance = sqrt(variance/20.);
+      //std::cout << "offset: " << offset << "\tBase: " << baseline << "\tVar: " << variance << std::endl;
+      if (variance < 1)
+	_baseline = baseline;
+      variance = 0;
+      baseline = 0;
+      offset += 20;
+    }
+    // keep track of start and end ticks
+    int startT = 0;
+    int endT   = 0;
     // Keep track of Area of Hit
     double Qarea    = 0;
     double QareaOut = 0;
@@ -81,37 +104,45 @@ namespace compress {
 
     for (t = inrange.first; t < inrange.second; t++){
 	int adcs = *t;
-	if ( PassThreshold(adcs,baseline) ) {
+	if ( PassThreshold(adcs,_baseline) ) {
 	  // figure out if this tick has been saved in the output
 	  bool saved = isTickInOutput(t,outranges,currentPair);
-	  //if (saved) { std::cout << "Yes! saved...Tick value: " << *t << std::endl; }
 	  saved ? _isSaved = 1 : _isSaved = 0;
+	  if (!active) { startT = std::distance(inrange.first,t); }
+	  // we are in an active region
 	  active = true;
 	  Nabove += 1;
 	  // if U plane -> filp
 	  if ( _pl == 0){
-	    Qarea   += -(adcs-baseline);
-	    if (saved) { QareaOut += -(adcs-baseline); }
+	    Qarea   += -(adcs-_baseline);
+	    if (saved) { QareaOut += -(adcs-_baseline); }
 	    //find if pulse peak
-	    if ( -(adcs-baseline) > Qpeak ){
-	      Qpeak = -(adcs-baseline);
-	      if (saved) { QpeakOut = -(adcs-baseline); }
+	    if ( -(adcs-_baseline) > Qpeak ){
+	      Qpeak = -(adcs-_baseline);
+	      if (saved) { QpeakOut = -(adcs-_baseline); }
 	    }
 	  }// if U plane
 	  else{
-	    Qarea   += (adcs-baseline);
-	    if (saved) { QareaOut += (adcs-baseline); }
+	    Qarea   += (adcs-_baseline);
+	    if (saved) { QareaOut += (adcs-_baseline); }
 	    //find if pulse peak
-	    if ( (adcs-baseline) > Qpeak ){
-	      Qpeak = (adcs-baseline);
-	      if (saved) { QpeakOut = (adcs-baseline); }
+	    if ( (adcs-_baseline) > Qpeak ){
+	      Qpeak = (adcs-_baseline);
+	      if (saved) { QpeakOut = (adcs-_baseline); }
 	    }
 	  }// if V,Y planes
 	}
 	else {//below threshold
-	  if ( active && (Nabove > 1) ){//if we were in the middle of a hit
+	  if ( active && (Nabove > _consecutive) ){//if we were in the middle of a hit
+	    endT = std::distance(inrange.first,t);
 	    //fill hit information
 	    if ( Qarea > 0 ){
+	      if (_verbose){
+		std::cout << "Found Hit: [" << startT << ", " << endT << "]" << std::endl
+			  << "[Area, Peak]. Input: [" << Qarea << ", " << Qpeak << "]\tOutput: ["
+			  << QareaOut << ", " << QpeakOut << "]" << std::endl
+			  << "CurrentPair: " << currentPair << "\tTot pairs: " << outranges.size() << std::endl;
+	      }
 	      _hit_area = Qarea;
 	      _hit_peak = Qpeak;
 	      _hit_areaOut = QareaOut;
@@ -205,10 +236,9 @@ namespace compress {
     if (outranges.size() == 0)
       return false;
 
-    //std::cout << "Tick Value : " << *t << std::endl;
-    //std::cout << "Current pair values : " << *(outranges[currentPair].first) << ", "  << *(outranges[currentPair].second) << std::endl;
-    
-    //std::cout << "Distance current start & this tick: " << std::distance(t,outranges[currentPair].first) << std::endl;
+    // if the current pair is beyond the size of output ranges -> return false
+    if (currentPair >= outranges.size())
+      return false;
 
     // are we in the current pair?
     if ( (std::distance(outranges[currentPair].first,t) > 0) and 
@@ -216,17 +246,18 @@ namespace compress {
       return true;
     
     // are we beyond the current pair?
-    else if (t > outranges[currentPair].second){
-      // are we in the next pair?
-      if (currentPair < (outranges.size()-1)){
-	if ( (std::distance(outranges[currentPair+1].first,t) > 0) and 
-	     (std::distance(outranges[currentPair+1].second,t) < 0) ){
+    while(std::distance(outranges[currentPair].second,t) > 0){
+      currentPair += 1;
+      // are we in the next pair? -> keep searching untill we exhaust pairs
+      if (currentPair < outranges.size() ){
+	if ( (std::distance(outranges[currentPair].first,t) > 0) and 
+	     (std::distance(outranges[currentPair].second,t) < 0) ){
 	  // yes we are in the next pair! update currentPair
-	  currentPair +=1;
 	  return true;
 	}// if in the next pair
       }// if there is a next pair
-    }// if we are beyond the first pair
+      else { return false; }
+    }// if we are beyond the first pair searched
     
     return false;
    }

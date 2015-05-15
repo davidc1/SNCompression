@@ -32,6 +32,7 @@ my_proc.set_output_file("compressedWFs.root")
 
 compAna=fmwk.ExecuteCompression()
 compAna.SetSaveOutput(False)
+compAna.SetUseSimch(True)
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
@@ -46,12 +47,18 @@ compAlgo.SetMaxADC(4095)
 compAlgo.SetUVYplaneBuffer(30,55,15,20,15,10);
 compAna.SetCompressAlgo(compAlgo)
 
-#add study Algorithm
+#add HIT study Algorithm
 compStudy = compress.CompressionStudyHits()
-compStudy.setThreshold(3.)
+compStudy.setThreshold(5.)
+compStudy.setConsecutiveTicks(3)
+
+#add IDE study Algorithm
+compIDE = compress.CompressionStudyIDEs()
+compIDE.SetVerbose(False)
 
 compAna.SetCompressAlgo(compAlgo)
-compAna.SetCompressStudy(compStudy)
+#compAna.SetCompressStudy(compStudy)
+compAna.SetIDEStudy(compIDE)
 
 # Add analysis modules to the processor
 

@@ -38,6 +38,9 @@ namespace compress {
     /// Set threshold
     void setThreshold(double t) { _threshold = t; }
 
+    /// Set number of consecutive ticks needed to save a hit
+    void setConsecutiveTicks(int c) { _consecutive = c; }
+
   protected:
 
 
@@ -50,12 +53,16 @@ namespace compress {
   bool isTickInOutput(const compress::tick& t, const std::vector<std::pair<tick,tick> >& outranges, size_t& currentPair);
   
   bool PassThreshold(double thisADC, double base);
-  
+
+  // threshold that needs to be met to be in "hit" region
   double _threshold;
+  // number of consecutive ticks above threshold required to save a hit
+  int _consecutive;
   
   // TTree and variable for TTree
   TTree *_in_study_tree;
   TTree *_out_study_tree;
+  double _baseline; // baseline used for this tick
   double _hit_peak; // hit max Q for waveforms
   double _hit_area; // hit area Q for waveforms
   double _hit_peakOut; // hit max Q for output waveforms
