@@ -144,7 +144,7 @@ namespace larlite {
     TStopwatch _evtwatch; // full event time
     TStopwatch _loopwatch;
     TStopwatch _watch;
-    double _time_loop, _time_get, _time_algo, _time_study, _time_calc, _time_swap, _time_ide;
+    double _time_loop, _time_get, _time_algo, _time_study, _time_calc, _time_swap, _time_ide, _time_read;
 
 
   };

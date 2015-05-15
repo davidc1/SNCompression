@@ -44,14 +44,10 @@ namespace compress {
     /// Set boolean whether to use baseline or not 
     void suppressBaseline(bool on) { _baseline = on; } 
     
-    /// Get Number of WFs in event 
-    int GetNumWFs() { return _numWFs; }
-    
     /// Get Number of output waveforms
     int GetNumOutWFs() { return _NumOutWFs; }
     
     //// Clear Histograms
-    //    void ClearHistograms() { _hInWF=0; _hOutWF=0; }
     void ClearHistograms() { delete _hInWF; delete _hOutWF; delete _hInBase; delete _hInVar; delete _hIDEs; }
     
     /// Fill Histograms with new and old waveforms
@@ -83,19 +79,46 @@ namespace compress {
 
     }
 
+    /// Get vector of ADCs
+    const std::vector<double> GetADCs(int which) const {
+      if (which == 1)
+	return _in_ADC_v;
+      else if (which == 2)
+	return _out_ADC_v;
+      else { 
+	std::cout << "not valid input...returning input ADCs " << std::endl;
+	return _in_ADC_v;
+      }
+    }
+
     /// Get baseline histo
     const TH1D* GetBaseHisto() const { return _hInBase; }
+    /// get baseline vector
+    const std::vector<double> GetBase() const { return _in_base_v; }
 
     /// Get variance histo
     const TH1D* GetVarHisto() const { return _hInVar; }
-    
+    /// get variance vector
+    const std::vector<double> GetVar() const { return _in_var_v; }
+
     /// get IDE histo
     const TH1D* GetIDEHisto() const { return _hIDEs; }
+    /// get IDE vector
+    const std::vector<double> GetIDE() const { return _in_IDE_v; }
+
+    /// get event info
+    int GetEvtNum() { return _evtNum; }
+    int GetChan() { return _ch; }
+    int GetPlane() { return _pl; }
 
     protected:
 
     /// Event Number
     int _evtNum;
+    /// channel
+    int _ch;
+    /// plane
+    int _pl;
 
     /// bool to suppress baseline or not
     bool _baseline;
@@ -108,20 +131,19 @@ namespace compress {
     TPad* _p1;
     /// Original WF Histo
     TH1D* _hInWF;
+    std::vector<double> _in_ADC_v;
     /// Original Baseline Histo (in blocks of 64)
     TH1D* _hInBase;
+    std::vector<double> _in_base_v;
     /// Original Variance Histo (in blocks of 64)
     TH1D* _hInVar;
+    std::vector<double> _in_var_v;
     /// Output WF Histo
     TH1D* _hOutWF;
+    std::vector<double> _out_ADC_v;
     /// IDE histogram
     TH1D* _hIDEs;
-
-    /// Keep track of which waveform we are looking at
-    int _currentWF;
-
-    /// Number of WFs in this event
-    int _numWFs;
+    std::vector<double> _in_IDE_v;
 
     /// Number of output waveforms from original input waveform
     int _NumOutWFs;

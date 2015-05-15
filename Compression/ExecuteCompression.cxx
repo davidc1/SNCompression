@@ -35,7 +35,7 @@ namespace larlite {
 
     _evt = 0;
 
-    _time_loop = _time_get = _time_algo = _time_study = _time_calc = _time_swap = _time_ide = 0;
+    _time_loop = _time_get = _time_algo = _time_study = _time_calc = _time_swap = _time_ide = _time_read = 0;
 
     _evtwatch.Start();
 
@@ -52,6 +52,7 @@ namespace larlite {
       return false;
     }
 
+    _watch.Start();
     // Otherwise Get RawDigits and execute compression
     _event_wf = storage->get_data<event_rawdigit>("daq");
     // If raw_digits object is empty -> exit
@@ -66,6 +67,7 @@ namespace larlite {
       // make a map: channel -> associated simch
       fillSimchMap(_event_simch);
     }
+    _time_read = _watch.RealTime();
 
     // clear place-holder for new, compressed, waveforms
     _out_event_wf.clear();
@@ -112,20 +114,22 @@ namespace larlite {
 
     std::cout << "  \033[95m<<Tot Time>>\033[00m  : " << tottime << " [s] ... or "
 	      << tottime/_evt << " [s/evt]" << std::endl
+	      << "  \033[95m<<Read Time>>\033[00m : " << _time_read << " [s] ... or "
+	      << _time_read/_evt << " [s/evt]" << std::endl
 	      << "  \033[95m<<Loop Time>>\033[00m : " << _time_loop << " [s] ... or "
 	      << _time_loop/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<Get Time>>\033[00m  : " << _time_get << " [s] ... or "
+	      << "  \033[95m<<Get Time>>\033[00m  : ... " << _time_get << " [s] ... or "
 	      << _time_get/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<Algo Time>>\033[00m : " << _time_algo << " [s] ... or "
+	      << "  \033[95m<<Algo Time>>\033[00m : ... " << _time_algo << " [s] ... or "
 	      << _time_algo/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<Study Time>>\033[00m: " << _time_study << " [s] ... or "
+	      << "  \033[95m<<Study Time>>\033[00m: ... " << _time_study << " [s] ... or "
 	      << _time_study/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<Calc Time>>\033[00m : " << _time_calc << " [s] ... or "
+	      << "  \033[95m<<IDEs Time>>\033[00m : ... " << _time_ide << " [s] ... or "
+	      << _time_ide/_evt << " [s/evt]" << std::endl
+	      << "  \033[95m<<Calc Time>>\033[00m : ... " << _time_calc << " [s] ... or "
 	      << _time_calc/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<Swap Time>>\033[00m : " << _time_swap << " [s] ... or "
-	      << _time_swap/_evt << " [s/evt]" << std::endl
-	      << "  \033[95m<<IDEs Time>>\033[00m : " << _time_ide << " [s] ... or "
-	      << _time_ide/_evt << " [s/evt]" << std::endl;
+	      << "  \033[95m<<Swap Time>>\033[00m : ... " << _time_swap << " [s] ... or "
+	      << _time_swap/_evt << " [s/evt]" << std::endl;
 
     if (_compress_algo)
       _compress_algo->EndProcess(_fout);
@@ -185,8 +189,9 @@ namespace larlite {
       if (_simchMap.find(ch) != _simchMap.end())
 	_compress_view->FillIDEs(_simchMap[ch],_evt,ch,pl,
 				 std::distance(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()));
-      else { _compress_view->ResetIDEs(_evt,ch,pl,
-				       std::distance(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd())); }
+      else
+	_compress_view->ResetIDEs(_evt,ch,pl,
+				  std::distance(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()));
       _compress_view->FillHistograms(std::make_pair(_compress_algo->GetInputBegin(),_compress_algo->GetInputEnd()),
 				     ranges,_evt,ch,pl);
       _compress_view->FillBaseVarHistos(_compress_algo->GetBaselines(),_compress_algo->GetVariances(),_evt,ch,pl);
