@@ -14,7 +14,8 @@ namespace larlite {
   {
     _fout = 0;
     _saveOutput = false;    
-    _use_simch = false;
+    _use_simch  = false;
+    _use_mcpart = false;
   }
 
   bool ExecuteCompression::initialize() {
@@ -67,6 +68,12 @@ namespace larlite {
       // make a map: channel -> associated simch
       fillSimchMap(_event_simch);
     }
+
+    // get mcpart
+    if (_use_mcpart){
+      _event_mcpart = storage->get_data<event_mcpart>("largeant");
+    }
+
     _time_read = _watch.RealTime();
 
     // clear place-holder for new, compressed, waveforms
@@ -87,11 +94,12 @@ namespace larlite {
       ApplyCompression(i);
     }//for all waveforms
     _time_loop += _loopwatch.RealTime();
-
-    _compressionU /= _NplU;
-    _compressionV /= _NplV;
-    _compressionY /= _NplY;
-    _compression  /= (_NplU+_NplV+_NplY);
+    
+    //std::cout << "U planes: " << _NplU << "\tV: " << _NplV << "\tY: " << _NplY << std::endl;
+    _compressionU /= 2399.;//_NplU;
+    _compressionV /= 2399.;//_NplV;
+    _compressionY /= 3456.;//_NplY;
+    _compression  /= (2399.+2399.+3456.);//(_NplU+_NplV+_NplY);
     _compress_tree->Fill();
     _NplU = _NplV = _NplY = 0;
     _compressionU = _compressionV = _compressionY = 0;

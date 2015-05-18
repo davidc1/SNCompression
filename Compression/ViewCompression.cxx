@@ -1,4 +1,4 @@
-c#ifndef VIEWCOMPRESSION_CXX
+#ifndef VIEWCOMPRESSION_CXX
 #define VIEWCOMPRESSION_CXX
 
 #include "ViewCompression.h"
@@ -9,9 +9,9 @@ namespace compress {
     : _c1(nullptr)
     , _p1(nullptr)
     , _hInWF(nullptr)
-    , _hOutWF(nullptr)
     , _hInBase(nullptr)
     , _hInVar(nullptr)
+    , _hOutWF(nullptr)
     , _hIDEs(nullptr)
   {
     _baseline = false;
@@ -33,6 +33,7 @@ namespace compress {
 
     if (pl == 2) { _base = 400; }
     else { _base = 2048; }
+    if (_baseline == false) { _base = 0; }
 
 
     _hInWF = new TH1D("hInWF", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",evt, pl, ch),
@@ -127,8 +128,8 @@ namespace compress {
     if (_hInVar) { delete _hInVar; }
     
     // block size is 64
-    int block = 64;
-    int nblocks = base.size();
+    size_t block = 64;
+    size_t nblocks = base.size();
 
     _hInBase = new TH1D("hInBase", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; Baseline",evt, pl, ch),
 		      block*nblocks, 0, block*nblocks);

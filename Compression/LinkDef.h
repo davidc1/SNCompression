@@ -10,7 +10,6 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::ExecuteCompression+;
-#pragma link C++ class larlite::StudyCompressionBufferSize+;
 #pragma link C++ class larlite::HitMaker+;
 #pragma link C++ class larlite::HitViewer+;
 #pragma link C++ class larlite::WFViewer+;
@@ -25,6 +24,7 @@
 #pragma link C++ class compress::ViewCompression+;
 #pragma link C++ class compress::CompressionStudyBase+;
 #pragma link C++ class compress::CompressionStudyHits+;
+#pragma link C++ class compress::CompressionStudyBaseline+;
 #pragma link C++ class compress::CompressionStudyIDEs+;
 
 //ADD_COMP_CLASS ... do not change this line
