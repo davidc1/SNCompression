@@ -10,6 +10,7 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::ExecuteCompression+;
+#pragma link C++ class larlite::MCStudyCompression+;
 #pragma link C++ class larlite::HitMaker+;
 #pragma link C++ class larlite::HitViewer+;
 #pragma link C++ class larlite::WFViewer+;

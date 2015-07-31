@@ -32,7 +32,6 @@ namespace compress {
 
     /// Default destructor
     virtual ~CompressionStudyBase(){}
-
     /// Open (maybe to write trees & such)
     virtual void ProcessBegin() {}
 

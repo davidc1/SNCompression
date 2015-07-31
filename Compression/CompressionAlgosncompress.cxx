@@ -167,9 +167,10 @@ namespace compress {
       _interesting = 0;
       if (interesting) { _interesting = 1; }
       
-      if (_verbose && interesting && (_baselineMap.find(ch) == _baselineMap.end()) )
-	std::cout << "WARNING: interesting stuff but baseline has not yet been set for ch " << ch << std::endl;
-      if (interesting && (_baselineMap.find(ch) != _baselineMap.end()) ){
+      if ( (_baselineMap.find(ch) != _baselineMap.end()) ){
+	
+	if (_verbose)
+	  std::cout << "WARNING: interesting stuff but baseline has not yet been set for ch " << ch << std::endl;
 
 	double base = _baselineMap[ch];
 	

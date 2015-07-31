@@ -7,8 +7,6 @@ filename = sys.argv[1]
 
 my_proc = fmwk.ana_processor()
 
-my_proc.set_verbosity(fmwk.msg.kDEBUG)
-
 my_proc.set_io_mode(fmwk.storage_manager.kREAD)
 
 my_proc.add_input_file(filename)

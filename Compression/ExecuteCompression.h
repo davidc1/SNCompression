@@ -27,7 +27,6 @@
 // DataFormat includes
 #include "DataFormat/rawdigit.h"
 #include "DataFormat/simch.h"
-#include "DataFormat/mcpart.h"
 // ROOT includes
 #include "TH1D.h"
 #include <TStopwatch.h>
@@ -94,9 +93,6 @@ namespace larlite {
 
     /// use simch info?
     void SetUseSimch(bool on) { _use_simch = on; }
-    /// use mcpart info?
-    void SetUseMCPart(bool on) { _use_mcpart = on; }
-    
 
   protected:
 
@@ -125,9 +121,6 @@ namespace larlite {
     /// event simch info
     larlite::event_simch* _event_simch;
 
-    /// event mcpart info
-    larlite::event_mcpart* _event_mcpart;
-
     /// simch map
     std::map<unsigned int,std::vector<std::pair<unsigned short, double> > >_simchMap;
 
@@ -136,9 +129,6 @@ namespace larlite {
 
     // boolean to decide if to read/use simch info
     bool _use_simch;
-
-    /// boolean to decide if to read/use mcpart info
-    bool _use_mcpart;
 
     /// holder for the # of ticks in the original waveforms
     double _inTicks;

@@ -55,7 +55,7 @@ namespace larlite {
       print(msg::kERROR,__FUNCTION__,"Data storage did not find associated waveforms!");
       return false;
     }
-
+    std::cout << event_wf->at(0).ADCs().size() << std::endl;
     //if all ok, plot wire vs. time for hits
     // set RawDigit length to the size of the 1st RawDigit object
     _hHits_U = Prepare2DHisto(Form("Event %i - WF ADCs U-Plane",_evtNum),

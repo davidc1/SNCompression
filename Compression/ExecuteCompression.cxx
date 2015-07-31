@@ -15,7 +15,6 @@ namespace larlite {
     _fout = 0;
     _saveOutput = false;    
     _use_simch  = false;
-    _use_mcpart = false;
   }
 
   bool ExecuteCompression::initialize() {
@@ -67,11 +66,6 @@ namespace larlite {
       _event_simch = storage->get_data<event_simch>("largeant");
       // make a map: channel -> associated simch
       fillSimchMap(_event_simch);
-    }
-
-    // get mcpart
-    if (_use_mcpart){
-      _event_mcpart = storage->get_data<event_mcpart>("largeant");
     }
 
     _time_read = _watch.RealTime();

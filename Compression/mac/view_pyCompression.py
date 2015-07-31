@@ -32,32 +32,37 @@ my_proc.set_output_file("bbb.root")
 # To show how one can run multiple analysis modules at once,
 # we make multiple ana_base instance.
 
+simch = True
+
 compAna=fmwk.ExecuteCompression()
 compAna.SetSaveOutput(False)
-compAna.SetUseSimch(True)
+compAna.SetUseSimch(simch)
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
 compAlgo.SetVerbose(True)
 compAlgo.SetFillTree(False)
 compAlgo.SetBlockSize(64)
-compAlgo.SetBaselineThresh(0.75)
-compAlgo.SetVarianceThresh(1.00)
+compAlgo.SetBaselineThresh(0.5)
+compAlgo.SetVarianceThresh(0.75)
 thresh = float(sys.argv[-1])
 compAlgo.SetCompressThresh(-thresh,thresh,thresh)
 compAlgo.SetMaxADC(4095)
-compAlgo.SetUVYplaneBuffer(30,55,15,20,15,10);
+compAlgo.SetUVYplaneBuffer(55,18,47,30,20,20)
+#compAlgo.SetUVYplaneBuffer(5,5,5,5,5,5)
+#compAlgo.SetUVYplaneBuffer(30,55,15,20,15,10);
 
 compAna.SetCompressAlgo(compAlgo)
 
 #add study Algorithm
-compStudy = compress.CompressionStudyHits()
-compStudy.setThreshold(5.)
-compStudy.setConsecutiveTicks(3)
+compStudy = compress.CompressionStudyBaseline()
+#compStudy.setThreshold(5.)
+#compStudy.setConsecutiveTicks(3)
 compStudy.SetVerbose(True)
 
 #add viewer Algorithm
 compView  = compress.ViewCompression()
+compView.suppressBaseline(True)
 
 #add IDE study Algorithm
 compIDE = compress.CompressionStudyIDEs()
@@ -76,8 +81,9 @@ nextevent = False;
 
 fig, (axIn, axOut) = plt.subplots(nrows=2,sharex=True,figsize=(15,6))
 
-axIn_IDE  = axIn.twinx()
-axOut_IDE = axOut.twinx()
+if (simch):
+    axIn_IDE  = axIn.twinx()
+    axOut_IDE = axOut.twinx()
 
 
 while my_proc.process_event():
@@ -88,36 +94,37 @@ while my_proc.process_event():
             nextevent = False;
             break;
         compAna.ApplyCompression(chan)
-        if (compView.GetNumOutWFs() >= 1):
+        if (compView.GetNumOutWFs() >= 0):
             print 'Evt: %i  Chan: %i  Plane: %i  --> Out WFs: %i'%(compView.GetEvtNum(),compView.GetChan(),compView.GetPlane(),compView.GetNumOutWFs())
             axIn.clear()
-            axIn_IDE.clear()
             axOut.clear()
-            axOut_IDE.clear()
             inWF  = np.array(compView.GetADCs(1))
             outWF = np.array(compView.GetADCs(2))
-            IDE   = np.array(compView.GetIDE())
             axIn.set_ylabel('ADCs',fontsize=16,color='b')
             axOut.set_ylabel('ADCs',fontsize=16,color='b')
             axIn.set_title('Compression Output. Evt: %i  Chan: %i  Plane: %i'
                            %(compView.GetEvtNum(),compView.GetChan(),compView.GetPlane()))
-            axIn_IDE.set_ylabel('Energy Dep [MeV]',fontsize=16,color='r')
-            axOut_IDE.set_ylabel('Energy Dep [MeV]',fontsize=16,color='r')
             axIn.plot(inWF,'b-',linewidth=2)
             for t1 in axIn.get_yticklabels():
                 t1.set_color('b')
-            #axIn_IDE.plot(IDE,'r-',linewidth=2)
-            for t2 in axIn_IDE.get_yticklabels():
-                t2.set_color('r')
             axOut.plot(outWF,'b-',linewidth=2)
-            axOut_IDE.plot(IDE,'r-',linewidth=2)
             for t3 in axOut.get_yticklabels():
                 t3.set_color('b')
-            for t4 in axOut_IDE.get_yticklabels():
-                t4.set_color('r')
             axIn.set_xlim([0,len(inWF)])
             axOut.set_xlim([0,len(outWF)])
-            #axOut.set_ylim([axIn.get_ylim()[0],axIn.get_ylim()[1]])
+            if (simch):
+                axIn_IDE.clear()
+                axOut_IDE.clear()
+                IDE   = np.array(compView.GetIDE())
+                axIn_IDE.set_ylabel('Energy Dep [MeV]',fontsize=16,color='r')
+                axOut_IDE.set_ylabel('Energy Dep [MeV]',fontsize=16,color='r')
+                axIn_IDE.plot(IDE,'r-',linewidth=2)
+                for t2 in axIn_IDE.get_yticklabels():
+                    t2.set_color('r')
+                axOut_IDE.plot(IDE,'r-',linewidth=2)
+                for t4 in axOut_IDE.get_yticklabels():
+                    t4.set_color('r')
+            axOut.set_ylim([axIn.get_ylim()[0],axIn.get_ylim()[1]])
             fig.canvas
             #fig.canvas.draw()
             fig.show()

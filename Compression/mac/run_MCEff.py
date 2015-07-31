@@ -30,9 +30,8 @@ my_proc.set_output_file("compressedWFs.root")
 # To show how one can run multiple analysis modules at once,
 # we make multiple ana_base instance.
 
-compAna=fmwk.ExecuteCompression()
-compAna.SetSaveOutput(False)
-compAna.SetUseSimch(True)
+compAna=fmwk.MCStudyCompression()
+compAna.setVerbose(False)
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
@@ -48,18 +47,7 @@ compAlgo.SetUVYplaneBuffer(55,18,47,30,20,20)
 #compAlgo.SetUVYplaneBuffer(30,55,15,20,15,10);
 compAna.SetCompressAlgo(compAlgo)
 
-#add HIT study Algorithm
-compStudy = compress.CompressionStudyHits()
-compStudy.setThreshold(5.)
-compStudy.setConsecutiveTicks(3)
-
-#add IDE study Algorithm
-compIDE = compress.CompressionStudyIDEs()
-compIDE.SetVerbose(False)
-
 compAna.SetCompressAlgo(compAlgo)
-#compAna.SetCompressStudy(compStudy)
-compAna.SetIDEStudy(compIDE)
 
 # Add analysis modules to the processor
 
