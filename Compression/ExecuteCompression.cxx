@@ -11,10 +11,12 @@ namespace larlite {
     , _compress_view(nullptr)
     , _ide_study(nullptr)
     , _compress_tree(nullptr)
+    , _compress_ch(nullptr)
   {
     _fout = 0;
     _saveOutput = false;    
     _use_simch  = false;
+    _ch_range_v.clear();
   }
 
   bool ExecuteCompression::initialize() {
@@ -26,6 +28,12 @@ namespace larlite {
     _compress_tree->Branch("_compressionU",&_compressionU,"compressionU/D");
     _compress_tree->Branch("_compressionV",&_compressionV,"compressionV/D");
     _compress_tree->Branch("_compressionY",&_compressionY,"compressionY/D");
+
+    if (_compress_ch) delete _compress_ch;
+    _compress_ch = new TTree("_compress_ch","Channel-by-Channel Compress. Tree");
+    _compress_ch->Branch("_compression",&_compression,"compression/D");
+    _compress_ch->Branch("_ch",&_ch,"ch/I");
+    _compress_ch->Branch("_pl",&_pl,"pl/I");
 
     _compressionU = 0;
     _compressionV = 0;
@@ -142,6 +150,8 @@ namespace larlite {
 
     _compress_tree->Write();
 
+    _compress_ch->Write();
+
     return true;
   }
 
@@ -163,6 +173,10 @@ namespace larlite {
     // used because different planes will have different "buffers"
     UInt_t ch = rawwf->Channel();
     int pl = larutil::Geometry::GetME()->ChannelToPlane(ch);
+
+    // is the channel in the channel range?
+    if (!isinrange(ch))
+      return;
     
     // finally, apply compression:
     // *-------------------------*
@@ -208,7 +222,7 @@ namespace larlite {
     }
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
-    CalculateCompression(ADCwaveform, ranges, pl);
+    CalculateCompression(ADCwaveform, ranges, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
     _compress_algo->Reset();
@@ -252,7 +266,7 @@ namespace larlite {
   
   void ExecuteCompression::CalculateCompression(const std::vector<short> &beforeADCs,
 						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,
-						int pl){
+						int pl, int ch){
     
     double inTicks = beforeADCs.size();
     double outTicks = 0;
@@ -276,6 +290,10 @@ namespace larlite {
       std::cout << "What plane? Error?" << std::endl;
     
     _compression += outTicks/inTicks;
+
+    _ch = ch;
+    _pl = pl;
+    _compress_ch->Fill();
 
     return;
   }
@@ -308,7 +326,23 @@ namespace larlite {
   }
 
   
+  // check if channel is in range
+  bool ExecuteCompression::isinrange(unsigned int ch){
 
+    if (_ch_range_v.size() == 0)
+      return true;
+
+    bool found = false;
+    
+    for (auto const& range : _ch_range_v){
+      if ( (ch > range.first) && (ch <= range.second) ){
+	found = true;
+	break;
+      }// if in range
+    }// for all ranges
+
+    return found;
+  }
 
 }
 #endif
