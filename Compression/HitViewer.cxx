@@ -17,8 +17,8 @@ namespace larlite {
     _hHits_V = 0;
     _hHits_Y = 0;
 
-    _w2cm = larutil::GeometryUtilities::GetME()->WireToCm();
-    _t2cm = larutil::GeometryUtilities::GetME()->TimeToCm();
+    _w2cm = larutil::GeometryHelper::GetME()->WireToCm();
+    _t2cm = larutil::GeometryHelper::GetME()->TimeToCm();
 
     _evtNum = 0;
     

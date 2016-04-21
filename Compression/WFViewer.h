@@ -16,7 +16,7 @@
 #define WFVIEWER_H
 
 #include "Analysis/ana_base.h"
-#include "LArUtil/GeometryUtilities.h"
+#include "LArUtil/GeometryHelper.h"
 #include "DataFormat/rawdigit.h"
 #include "DataFormat/hit.h"
 #include <math.h>
