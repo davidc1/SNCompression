@@ -1,8 +1,7 @@
 # Load libraries
 import sys, os
-from ROOT import *
-from ROOT import gSystem
-from ROOT import larlite as fmwk
+import ROOT
+from larlite import larlite as fmwk
 from ROOT import compress
 
 # Create ana_processor instance
@@ -22,7 +21,7 @@ for x in xrange(len(sys.argv)-2):
 
 # Set output root file: this is a separate root file in which your
 # analysis module can store anything such as histograms, your own TTree, etc.
-my_proc.set_ana_output_file("SNoutput.root")
+my_proc.set_ana_output_file("SNoutput_ana.root")
 my_proc.set_output_file("compressedWFs.root")
 
 #my_proc.set_output_rootdir("scanner")
@@ -32,15 +31,15 @@ my_proc.set_output_file("compressedWFs.root")
 
 compAna=fmwk.ExecuteCompression()
 compAna.SetSaveOutput(False)
-compAna.SetUseSimch(True)
+compAna.SetUseSimch(False)
 #add Compression Algorithm
 compAlgo = compress.CompressionAlgosncompress()
 compAlgo.SetDebug(False)
 compAlgo.SetVerbose(False)
 compAlgo.SetFillTree(False)
 compAlgo.SetBlockSize(64)
-compAlgo.SetBaselineThresh(0.5)
-compAlgo.SetVarianceThresh(0.75)
+compAlgo.SetBaselineThresh(2.0)
+compAlgo.SetVarianceThresh(2.0)
 thresh = float(sys.argv[-1])
 compAlgo.SetCompressThresh(-thresh,thresh,thresh)
 compAlgo.SetMaxADC(4095)
@@ -59,7 +58,7 @@ compIDE.SetVerbose(False)
 
 compAna.SetCompressAlgo(compAlgo)
 #compAna.SetCompressStudy(compStudy)
-compAna.SetIDEStudy(compIDE)
+#compAna.SetIDEStudy(compIDE)
 
 # Add analysis modules to the processor
 

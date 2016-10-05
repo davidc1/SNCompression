@@ -1,8 +1,7 @@
 # Load libraries
 import sys, os
-from ROOT import *
-from ROOT import gSystem
-from ROOT import larlite as fmwk
+import ROOT
+from larlite import larlite as fmwk
 from ROOT import compress
 
 # Create ana_processor instance
