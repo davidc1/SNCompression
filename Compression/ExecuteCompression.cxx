@@ -31,7 +31,7 @@ namespace larlite {
 
     if (_compress_ch) delete _compress_ch;
     _compress_ch = new TTree("_compress_ch","Channel-by-Channel Compress. Tree");
-    _compress_ch->Branch("_compression",&_compression,"compression/D");
+    _compress_ch->Branch("_ch_compression",&_ch_compression,"ch_compression/D");
     _compress_ch->Branch("_ch",&_ch,"ch/I");
     _compress_ch->Branch("_pl",&_pl,"pl/I");
 
@@ -289,6 +289,8 @@ namespace larlite {
     else
       std::cout << "What plane? Error?" << std::endl;
     
+    _ch_compression = outTicks/inTicks;
+
     _compression += outTicks/inTicks;
 
     _ch = ch;
@@ -329,13 +331,14 @@ namespace larlite {
   // check if channel is in range
   bool ExecuteCompression::isinrange(unsigned int ch){
 
-    if (_ch_range_v.size() == 0)
+    if (_ch_range_v.size() == 0){
       return true;
+    }
 
     bool found = false;
-    
+
     for (auto const& range : _ch_range_v){
-      if ( (ch > range.first) && (ch <= range.second) ){
+      if ( (ch >= range.first) && (ch <= range.second) ){
 	found = true;
 	break;
       }// if in range

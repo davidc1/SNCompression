@@ -77,7 +77,7 @@ namespace larlite {
     /// Calculate compression: keep holders for number of ticks in original waveform and number of ticks in compressed waveforms
     void CalculateCompression(const std::vector<short> &beforeADCs,
 			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges,
-			      int pl);
+			      int pl, int ch);
 
     /// Decide here if to save output
     void SetSaveOutput(bool on) { _saveOutput = on; }
@@ -94,11 +94,21 @@ namespace larlite {
     /// use simch info?
     void SetUseSimch(bool on) { _use_simch = on; }
 
+    /// add channel range
+    void addChannelRange(unsigned int min, unsigned int max) {
+      std::pair<unsigned int, unsigned int> range;
+      range = std::make_pair(min,max);
+      _ch_range_v.push_back( range );
+    }
+
   protected:
 
     /// Now filll output WFs information into larlite data product so that we can write to output
     void SwapData(const larlite::rawdigit* tpc_data,
 		  const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
+
+    // check if chanels is in range
+    bool isinrange(unsigned int ch);
     
     /// Compression Algorithm Object...performs compression
     compress::CompressionAlgoBase* _compress_algo;
@@ -124,6 +134,9 @@ namespace larlite {
     /// simch map
     std::map<unsigned int,std::vector<std::pair<unsigned short, double> > >_simchMap;
 
+    // range of channels to be used
+    std::vector<std::pair<unsigned int,unsigned int> > _ch_range_v;
+
     // Boolean to decide whether to save output
     bool _saveOutput;
 
@@ -142,6 +155,11 @@ namespace larlite {
     double _compressionV;
     double _compressionY;
     int    _evt;
+    // Tree for channel-by-channel compression
+    TTree *_compress_ch;
+    double _ch_compression;
+    int    _ch;
+    int    _pl;
     // keep track of number of wires scanned per plane (to calculate compession)
     int _NplU, _NplV, _NplY;
 
