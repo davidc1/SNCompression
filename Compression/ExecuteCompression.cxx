@@ -61,8 +61,15 @@ namespace larlite {
     }
 
     _watch.Start();
-    // Otherwise Get RawDigits and execute compression
-    _event_wf = storage->get_data<event_rawdigit>("daq");
+    
+    // Get RawDigits and execute compression
+    _event_wf   = storage->get_data<event_rawdigit>("daq");
+
+    // Load output wire data if to be saved
+    _event_wire = storage->get_data<event_wire>("caldata");
+
+    storage->set_id(storage->run_id(), storage->subrun_id(), storage->event_id());
+    
     // If raw_digits object is empty -> exit
     if(!_event_wf) {
       print(msg::kERROR,__FUNCTION__,"Data storage did not find associated waveforms!");
@@ -79,7 +86,7 @@ namespace larlite {
     _time_read = _watch.RealTime();
 
     // clear place-holder for new, compressed, waveforms
-    _out_event_wf.clear();
+    //_out_event_wf.clear();
 
     // reset variables that hold compression factor
     _inTicks  = 0;
@@ -105,13 +112,16 @@ namespace larlite {
     _compress_tree->Fill();
     _NplU = _NplV = _NplY = 0;
     _compressionU = _compressionV = _compressionY = 0;
-    
+
+    /*
     //now take new WFs and place in event_wf vector
     if (_saveOutput){
       _event_wf->clear();
       for (size_t m=0; m < _out_event_wf.size(); m++)
 	_event_wf->push_back(_out_event_wf.at(m));
     }
+    */
+
     return true;
   }
 
@@ -246,20 +256,32 @@ namespace larlite {
 
     UInt_t chan = tpc_data->Channel();
 
+    larlite::sparse_vector<float> wf_ROIs;
 
     //loop over new waveforms created
     for (size_t n=0; n < ranges.size(); n++){
       // prepare output waveform
       compress::tick t;
-      std::vector<short> out;
+      float first_tick = (float)*(ranges[n].first);
+      std::vector<float> out;
       for (t = ranges[n].first; t < ranges[n].second; t++)
-	out.push_back(*t);
-      
+	out.push_back( (float)*t - first_tick );
+
+      unsigned int start_tick = ranges[n].first - _compress_algo->GetInputBegin();
+
+      wf_ROIs.add_range( start_tick, std::move(out) );
+
+      /*
       larlite::rawdigit new_tpc_data( chan, out.size(), out, larlite::raw::kNone);
       new_tpc_data.SetPedestal(ranges[n].first-_compress_algo->GetInputBegin());
       _out_event_wf.push_back(new_tpc_data);
-    }
+      */
+    }// for all saved ROIs
 
+    larlite::wire thiswire(std::move(wf_ROIs), chan, larutil::Geometry::GetME()->View(chan) );
+
+    _event_wire->emplace_back( thiswire );
+    
     return;
   }
 

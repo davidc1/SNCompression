@@ -26,6 +26,7 @@
 #include "LArUtil/Geometry.h"
 // DataFormat includes
 #include "DataFormat/rawdigit.h"
+#include "DataFormat/wire.h"
 #include "DataFormat/simch.h"
 // ROOT includes
 #include "TH1D.h"
@@ -125,8 +126,8 @@ namespace larlite {
     /// holder for input rawdigit
     larlite::event_rawdigit* _event_wf;
     
-    /// event_rawdigit: temporary holder for output WFs
-    larlite::event_rawdigit _out_event_wf;
+    /// event_wire: temporary holder for output WFs
+    larlite::event_wire* _event_wire;
 
     /// event simch info
     larlite::event_simch* _event_simch;
