@@ -75,8 +75,8 @@ namespace compress {
     // boolean to decide if to fill tree
     bool _fillTree;
     int _pl;
-    double _v1, _v2, _v3;
-    double _b1, _b2, _b3;
+    int _v1, _v2, _v3;
+    int _b1, _b2, _b3;
     double _max;
     int _interesting;
     int _save;

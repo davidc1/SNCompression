@@ -2,13 +2,15 @@
 #define COMPRESSIONALGOSNCOMPRESS_CXX
 
 #include "CompressionAlgosncompress.h"
+#include <limits>
+#include <cstddef>
 
 namespace compress {
   
 
   CompressionAlgosncompress::CompressionAlgosncompress()
-    : _algo_tree(nullptr)
-    , CompressionAlgoBase()
+    : CompressionAlgoBase()
+    , _algo_tree(nullptr)
   {
     _maxADC = 4095;
     _buffer = std::vector<std::vector<int>>(3,std::vector<int>(2,0));
@@ -27,14 +29,13 @@ namespace compress {
     if (_algo_tree) { delete _algo_tree; }
     _algo_tree = new TTree("_algo_tree","Algorithm-specific Tree");
     _algo_tree->Branch("_pl",&_pl,"pl/I");
-    _algo_tree->Branch("_v1",&_v1,"v1/D");
-    _algo_tree->Branch("_v2",&_v2,"v2/D");
-    _algo_tree->Branch("_v3",&_v3,"v3/D");
-    _algo_tree->Branch("_b1",&_b1,"b1/D");
-    _algo_tree->Branch("_b2",&_b2,"b2/D");
-    _algo_tree->Branch("_b3",&_b3,"b3/D");
+    _algo_tree->Branch("_v1",&_v1,"v1/I");
+    _algo_tree->Branch("_v2",&_v2,"v2/I");
+    _algo_tree->Branch("_v3",&_v3,"v3/I");
+    _algo_tree->Branch("_b1",&_b1,"b1/I");
+    _algo_tree->Branch("_b2",&_b2,"b2/I");
+    _algo_tree->Branch("_b3",&_b3,"b3/I");
     _algo_tree->Branch("_max",&_max,"max/D");
-    _algo_tree->Branch("_interesting",&_interesting,"interesting/I");
     _algo_tree->Branch("_save",&_save,"save/I");
     
   }
@@ -53,12 +54,6 @@ namespace compress {
   
   void CompressionAlgosncompress::ApplyCompression(const std::vector<short> &waveform, const int mode, const UInt_t ch){
     
-    //double base = 0;
-    int buffer = 0;
-    
-    // entries in the waveform:
-    int nTicks = waveform.size();
-
     // iterator to the beginning and end of the waveform
     _begin = waveform.begin();
     _end   = waveform.end();
@@ -67,111 +62,136 @@ namespace compress {
     _baselines.clear();
     _variances.clear();
     
-    int diff = 0;
-    // keep track of whether 3-block segment is "interesting" -> default is false
-    bool interesting = false;
+    unsigned int _baseline[3];
+    unsigned int _variance[3];
+    _baseline[0] = std::numeric_limits<unsigned int>::max();
+    _baseline[1] = std::numeric_limits<unsigned int>::max();
+    _baseline[2] = std::numeric_limits<unsigned int>::max();
+    _variance[0] = std::numeric_limits<unsigned int>::max();
+    _variance[1] = std::numeric_limits<unsigned int>::max();
+    _variance[2] = std::numeric_limits<unsigned int>::max();
     
-    double baseline[3];
-    double variance[3];
     // Tick @ which waveform starts
     int start = 0;
+
+    // start & end tick for each Region Of Interest (ROI) saved
+    tick s;
+    tick e;
+    std::pair<tick,tick> thisRange; 
     
     _pl = mode;
 
-    // how many blocks? we need to make sure we don't overflow the window length
-    int nsegments = int(waveform.size()/(float(_block)));
+    for (size_t n = 0; n < waveform.size(); n++) {
 
-    for(int pos = 0; pos < nsegments; pos+= 3){
+      _thisTick = _begin + n;
 
-      int thistick = pos*_block;
-      
-      _thisTick = _begin+pos*_block;
+      // have we reached the end of a segment?
+      if (n % (_block - 1) == 0){
 
-      if (_debug)
-	std::cout << "position is: " << pos << std::endl;
-      for(int j = 0; j<3; j++){
-	variance[j] = 0;
-	baseline[j] = 0;
-      }
-      //find baseline
-      tick t = _thisTick;
-      for (; t < _thisTick + _block; t++)
-	baseline[0] += *t;
-      for (; t < _thisTick + 2*_block; t++)
-	baseline[1] += *t;
-      for (; t < _thisTick + 3*_block; t++)
-	baseline[2] += *t;
+	// is this the 1st block? if so calculate mean and variance
+	if ( (n + 1 - _block) == 0){
+	  int baseline = 0;
+	  int var  = 0;
+	  int diff = 0;
+	  tick t = _thisTick - _block + 1;
+	  int mm = 0;
+	  for (; t < _thisTick + 1; t++){
+	    baseline += *t;
+	    mm += 1;
+	  }
+	  baseline /= _block;
+	  t = _thisTick - _block + 1;
+	  for (; t < _thisTick + 1; t++){
+	    diff = ( (*t) - baseline ) * ( (*t) - baseline );
+	    if (diff < 4095) var += diff;
+	    else var += 4095;
+	  }
+	  var = var >> 6;
+	  _baseline[1] = baseline;
+	  _variance[1] = var;
 
-      for(int j = 0; j<3; j++)
-	baseline[j] = baseline[j]/_block;
-      
-      //find variance
-      t = _thisTick;
-      for (; t < _thisTick + _block; t++){
-	diff = *t-baseline[0];
-	if (diff < _block-1) { variance[0] += diff*diff; }
-	else { variance[0] += 4095; }
-      }
-      for (; t < _thisTick + 2*_block; t++){
-	diff = *t-baseline[1];
-	if (diff < _block-1) { variance[1] += diff*diff; }
-	else { variance[1] += 4095; }
-      }
-      for (; t < _thisTick + 3*_block; t++){
-	diff = *t-baseline[2];
-	if (diff < _block-1) { variance[2] += diff*diff; }
-	else { variance[2] += 4095; }
-      }
+	  baseline = 0;
+	  var      = 0;
+	  diff     = 0;
+	  t = _thisTick + 1;
+	  for (; t < _thisTick + _block + 1; t++)
+	    baseline += *t;
+	  baseline = baseline >> 6;
+	  t = _thisTick + 1;
+	  int nn = 0;
+	  for (; t < _thisTick + _block + 1; t++){
+	    diff = ( (*t) - baseline ) * ( (*t) - baseline );
+	    if (diff < 4095) var += diff;
+	    else var += 4095;
+	    nn += 1;
+	  }
+	  var = var >> 6;
+	  _baseline[2] = baseline;
+	  _variance[2] = var;
+	}// 1st block updating
 
-      for(int j = 0; j<3; j++){
-	variance[j] = variance[j]/_block;
-	_baselines.push_back(baseline[j]);
-	_variances.push_back(variance[j]);
-      }
-      
-      _v1 = variance[0];
-      _v2 = variance[1];
-      _v3 = variance[2];
-      _b1 = baseline[0];
-      _b2 = baseline[1];
-      _b3 = baseline[2];
+	// always compute baseline and variance for next block, if it exists
+	if ( (n + _block) < waveform.size() ){
+	  int baseline = 0;
+	  int var      = 0;
+	  int diff     = 0;
+	  tick t = _thisTick + 1;
+	  for (; t < _thisTick + _block + 1; t++)
+	    baseline += *t;
+	  baseline = baseline >> 6;
+	  t = _thisTick + 1;
+	  for (; t < _thisTick + _block + 1; t++){
+	    diff = ( (*t) - baseline ) * ( (*t) - baseline );
+	    if (diff < 4095) var += diff;
+	    else var += 4095;
+	  }
+	  var = var >> 6;
+
+	  // update baselines and variances
+
+	  // shift baselines and variances by 1 to accomodate
+	  // for the new value from the last block
+	  _baseline[0] = _baseline[1];
+	  _variance[0] = _variance[1];
+	  _baseline[1] = _baseline[2];
+	  _variance[1] = _variance[2];
+	  // add the newly calculated value
+	  // to the last element
+	  _baseline[2] = baseline;
+	  _variance[2] = var;
+
+	}// if we are updating the NEXT block
+
+	if (_debug){
+	  std::cout << "Baseline. Block 1: " << _baseline[0] << "\tBlock 2: " << _baseline[1] << "\tBlock 3: " << _baseline[2] << std::endl;
+	  std::cout << "Variance. Block 1: " << _variance[0] << "\tBlock 2: " << _variance[1] << "\tBlock 3: " << _variance[2] << std::endl;
+	}
 
 
-      if (_debug){
-	std::cout << "Baseline. Block 1: " << baseline[0] << "\tBlock 2: " << baseline[1] << "\tBlock 3: " << baseline[2] << std::endl;
-	std::cout << "Variance. Block 1: " << variance[0] << "\tBlock 2: " << variance[1] << "\tBlock 3: " << variance[2] << std::endl;
-      }
-      
+	// Determine if the 3 blocks are quiet enough to update the baseline
+	if ( ( (_baseline[2] - _baseline[1]) * (_baseline[2] - _baseline[1]) < _deltaB ) && 
+	     ( (_baseline[2] - _baseline[0]) * (_baseline[2] - _baseline[0]) < _deltaB ) && 
+	     ( (_baseline[1] - _baseline[0]) * (_baseline[1] - _baseline[0]) < _deltaB ) &&
+	     ( (_variance[2] - _variance[1]) * (_variance[2] - _variance[1]) < _deltaV ) &&
+	     ( (_variance[2] - _variance[0]) * (_variance[2] - _variance[0]) < _deltaV ) &&
+	     ( (_variance[1] - _variance[0]) * (_variance[1] - _variance[0]) < _deltaV ) ){
+	  _baselineMap[ch] = _baseline[1];
+	  if (_debug) std::cout << "Baseline updated to value " << _baselineMap[ch] << std::endl;
+	}
 
-      // Now determine if these 3 blocks are interesting.
-      // if so, try and look for a waveform within
-      if ( ( (baseline[2] - baseline[1]) * (baseline[2] - baseline[1]) < _deltaB ) && 
-	   ( (baseline[2] - baseline[0]) * (baseline[2] - baseline[0]) < _deltaB ) && 
-	   ( (baseline[1] - baseline[0]) * (baseline[1] - baseline[0]) < _deltaB ) &&
-	   ( (variance[2] - variance[1]) * (variance[2] - variance[1]) < _deltaV ) &&
-	   ( (variance[2] - variance[0]) * (variance[2] - variance[0]) < _deltaV ) &&
-	   ( (variance[1] - variance[0]) * (variance[1] - variance[0]) < _deltaV ) ){
-	// no -> boring
-	_baselineMap[ch] = baseline[1];
-	//	base = baseline[1];
-	interesting = false;
-      }
-      else{
-	// yes! interesting
-	interesting = true;
-      }
-      
-      if (_verbose && interesting)
-	std::cout << "Interesting @ tick " << thistick << std::endl;
+	_algo_tree->Fill();
+      }// if we hit the end of a new block
 
-      _interesting = 0;
-      if (interesting) { _interesting = 1; }
+      _v1 = _variance[0];
+      _v2 = _variance[1];
+      _v3 = _variance[2];
+      _b1 = _baseline[0];
+      _b2 = _baseline[1];
+      _b3 = _baseline[2];
+
       
       if ( (_baselineMap.find(ch) != _baselineMap.end()) ){
 	
-	if (_verbose)
-	  std::cout << "WARNING: interesting stuff but baseline has not yet been set for ch " << ch << std::endl;
-
 	double base = _baselineMap[ch];
 	
 	// reset maxima
@@ -184,106 +204,71 @@ namespace compress {
 	_save = 0;
 	// also keep track of each new sub-waveform to push back to output waveform
 	outputwf.clear();
-	// loop over all 3*_block ticks together applyting threshold _thresh
-	// after basline subtraction w/ baseline "base"
 	
-	// start & end tick for each block saved
-	tick s;
-	tick e;
-	std::pair<tick,tick> thisRange; 
-	for (t = _thisTick; t < _thisTick + 3*_block; t++){
+	// loop over central block to search for above-threshold regions
+	
 
-	  double thisADC = *t;
-	  if (thisADC-base > _max) { _max = thisADC-base; }
-
-	  if ( PassThreshold(thisADC, base) ){
-	    if (_verbose) { std::cout << "+ "; }
-	    _save = 1;
-	    // yay -> active
-	    // if start == 0 it means it's a new pulse! (previous tick was quiet)
-	    // keep track of maxima
-	    if ( start == 0 ){
-	      start = int(t-_begin);
-	      // also, since we just started...add "backwards ticks" to account for padding
-	      if ( (t-_buffer[mode][0]) > _begin) { s = t-_buffer[mode][0]; }
-	      else { s = _begin; }
-	      if (_verbose) { std::cout << "found start-tick " << s-_begin << std::endl; }
-	    }
-	    // add bin content to temporary output waveform
-	    outputwf.push_back(*t);
+	//for (t = _thisTick + _block; t < _thisTick + 2 * _block; t++){
+	
+	tick t = _thisTick;
+	
+	double thisADC = *t;
+	if (thisADC-base > _max) { _max = thisADC-base; }
+	
+	if ( PassThreshold(thisADC, base) ){
+	  if (_verbose) { std::cout << "+ "; }
+	  _save = 1;
+	  // yay -> active
+	  // if start == 0 it means it's a new pulse! (previous tick was quiet)
+	  // keep track of maxima
+	  if ( start == 0 ){
+	    start = int(t-_begin);
+	    // also, since we just started...add "backwards ticks" to account for padding
+	    if ( (t-_buffer[mode][0]) > _begin) { s = t-_buffer[mode][0]; }
+	    else { s = _begin; }
+	    if (_verbose) { std::cout << "found start-tick " << s-_begin << std::endl; }
 	  }
-	  
-	  else{
-	    // we are in a sub-threshold region.
-	    // 2 possibilities:
-	    // 1) we were in a sub-threshold region at the previous tick -> then just carry on
-	    // 2) we were in an active region in the previous tick -> we just "finished" this mini-waveform.
-	    //    then Complete padding and save to output
-	    if ( start > 0 ){
-	      // finish padding
-	      if ( (t+_buffer[mode][1]) < _end) { e = t+_buffer[mode][1]; }
-	      else { e = _end; }
-	      // push back waveform and time-tick
-	      if (_verbose) {
-		std::cout << std::endl;
-		std::cout << "saving [" << s-_begin << ", " << e-_begin << "]" << std::endl;
-	      }
-	      // if the beginning is before the end of the previous section -> just expand
-	      if (_timeRange.size() > 0){
-		if (s < _timeRange.back().second){
-		  // this new range starts before the last one ends -> edit the last one
-		  _timeRange.back().second = e;
-		}
-		else{
-		  thisRange = std::make_pair(s,e);
-		  _timeRange.push_back(thisRange);
-		}
+	  // add bin content to temporary output waveform
+	  outputwf.push_back(*t);
+	}
+	
+	else{
+	  // we are in a sub-threshold region.
+	  // 2 possibilities:
+	  // 1) we were in a sub-threshold region at the previous tick -> then just carry on
+	  // 2) we were in an active region in the previous tick -> we just "finished" this mini-waveform.
+	  //    then Complete padding and save to output
+	  if ( start > 0 ){
+	    // finish padding
+	    if ( (t+_buffer[mode][1]) < _end) { e = t+_buffer[mode][1]; }
+	    else { e = _end; }
+	    // push back waveform and time-tick
+	    if (_verbose) {
+	      std::cout << std::endl;
+	      std::cout << "saving [" << s-_begin << ", " << e-_begin << "]" << std::endl;
+	    }
+	    // if the beginning is before the end of the previous section -> just expand
+	    if (_timeRange.size() > 0){
+	      if (s < _timeRange.back().second){
+		// this new range starts before the last one ends -> edit the last one
+		_timeRange.back().second = e;
 	      }
 	      else{
 		thisRange = std::make_pair(s,e);
 		_timeRange.push_back(thisRange);
 	      }
-	      _save = 0;
-	      start = 0;
-	    }
-	  }
-	  
-	}
-
-	// if we are still in the active region: save and reset
-	if (start > 0){
-	  // decide where the end is: at the end of this 3-block segment
-	  e = _thisTick + 3*_block;
-	  if (_verbose) {
-	    std::cout << std::endl;
-	    //std::cout << "saving [" << start-buffer << ", " << start-buffer+outputwf.size() << "]" << std::endl;
-	    std::cout << "saving [" << s-_begin << ", " << e-_begin << "]" << std::endl;
-	  }
-	  // if the beginning is before the end of the previous section -> just expand
-	  if (_timeRange.size() > 0){
-	    if (s < _timeRange.back().second){
-	      // this new range starts before the last one ends -> edit the last one
-	      _timeRange.back().second = e;
 	    }
 	    else{
 	      thisRange = std::make_pair(s,e);
 	      _timeRange.push_back(thisRange);
 	    }
+	    _save = 0;
+	    start = 0;
 	  }
-	  else{
-	    thisRange = std::make_pair(s,e);
-	    _timeRange.push_back(thisRange);
-	  }
-	  _save = 0;
-	  start = 0;
 	}
-	
-	if (_verbose) { std::cout << std::endl; }
-      }//if interesting!
-      if (_fillTree)
-	_algo_tree->Fill();
-      
-    }//for all 3-block segments
+      }
+
+    }// for all ticks
 
     return;
   }
