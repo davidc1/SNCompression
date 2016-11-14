@@ -127,6 +127,8 @@ namespace larlite {
 
   bool ExecuteCompression::finalize() {
 
+    if (_fout) _fout->cd();
+
     double tottime = _evtwatch.RealTime();
     
     std::cout.precision(3);
