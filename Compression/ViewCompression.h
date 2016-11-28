@@ -80,15 +80,14 @@ namespace compress {
     }
 
     /// Get vector of ADCs
-    const std::vector<double> GetADCs(int which) const {
-      if (which == 1)
-	return _in_ADC_v;
-      else if (which == 2)
-	return _out_ADC_v;
-      else { 
-	std::cout << "not valid input...returning input ADCs " << std::endl;
-	return _in_ADC_v;
-      }
+    const std::vector<double> GetInADCs() const {
+      return _in_ADC_v;
+    }
+    const std::vector<std::vector<double> > GetOutADCs() const {
+      return _out_ADC_v_v;
+    }
+    const std::vector<size_t> GetOutTicks() const {
+      return _out_tick_v;
     }
 
     /// Get baseline histo
@@ -140,7 +139,8 @@ namespace compress {
     std::vector<double> _in_var_v;
     /// Output WF Histo
     TH1D* _hOutWF;
-    std::vector<double> _out_ADC_v;
+    std::vector< std::vector<double> > _out_ADC_v_v;
+    std::vector<size_t> _out_tick_v;
     /// IDE histogram
     TH1D* _hIDEs;
     std::vector<double> _in_IDE_v;

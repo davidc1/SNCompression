@@ -24,50 +24,60 @@ namespace compress {
     _evtNum = evt;
     _ch = ch;
     _pl = pl;
-    
+
     _NumOutWFs = ranges.size();
 
     // delete any histograms if they alerady existed
-    if (_hInWF) { delete _hInWF; }
-    if (_hOutWF) { delete _hOutWF; }
+    //if (_hInWF) { delete _hInWF; }
+    //if (_hOutWF) { delete _hOutWF; }
 
     if (pl == 2) { _base = 400; }
     else { _base = 2048; }
     if (_baseline == false) { _base = 0; }
 
 
+    /*
     _hInWF = new TH1D("hInWF", Form("Event %i - Pl %i - Ch %i - Input WF; Time Tick; ADCs",evt, pl, ch),
 		      std::distance(range.first,range.second), 0, std::distance(range.first,range.second));
 
     _hOutWF = new TH1D("hOutWF", Form("Event %i - Pl %i - Ch %i - Output WF; Time Tick; ADCs",evt, pl, ch),
 		       std::distance(range.first,range.second), 0, std::distance(range.first,range.second));
+    */
 
     _in_ADC_v.clear();
-    _out_ADC_v.clear();
+    _out_ADC_v_v.clear();
+    _out_tick_v.clear();
 
-    _hInWF->SetTitleOffset(0.8,"X");
-    _hOutWF->SetTitleOffset(0.8,"X");
+    //_hInWF->SetTitleOffset(0.8,"X");
+    //_hOutWF->SetTitleOffset(0.8,"X");
     
     for (tick t = range.first; t < range.second; t++){
-      _hInWF->SetBinContent(std::distance(range.first,t)+1, *t-_base);
-      _in_ADC_v.push_back(*t-_base);
-      _out_ADC_v.push_back(0);
+      //_hInWF->SetBinContent(std::distance(range.first,t)+1, *t-_base);
+      _in_ADC_v.push_back(*t);
       //_hOutWF->SetBinContent(std::distance(range.first,t)+1, 0.);
     }
 
     
     for (size_t j=0; j < ranges.size(); j++){
-      std::cout << "Range: [" <<  std::distance(range.first,ranges.at(j).first) << ", "
-      		<< std::distance(range.first,ranges.at(j).second)
+
+      auto const& out_range = ranges.at(j);
+      
+      std::cout << "Range: ["
+		<<  std::distance(range.first,out_range.first)
+		<< ", "
+      		<< std::distance(range.first,out_range.second)
       		<< "]" << std::endl;
       tick t;
-      for (t = ranges.at(j).first; t < ranges.at(j).second; t++){
-	_hOutWF->SetBinContent( std::distance(range.first,t), *t-_base);
-	_out_ADC_v[std::distance(range.first,t)] = (*t-_base);
-      }
-    }
-    _hInWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
-    _hOutWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
+      std::vector<double> out_v;
+      _out_tick_v.push_back( std::distance(range.first, out_range.first) );
+      for (t = out_range.first; t < out_range.second; t++){
+	//_hOutWF->SetBinContent( std::distance(range.first,t), *t-_base);
+	out_v.push_back( *t );
+      }// for all ticks in range
+      _out_ADC_v_v.push_back( out_v );
+    }// for all output ranges
+    //_hInWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
+    //_hOutWF->SetAxisRange(_hInWF->GetMinimum(), _hInWF->GetMaximum(), "Y");
     
     return;
   }
@@ -122,6 +132,8 @@ namespace compress {
 					  const std::vector<double>& var,
 					  int evt, UShort_t ch, UChar_t pl)
   {
+
+    return;
     
     // delete histograms if they existed already
     if (_hInBase) { delete _hInBase; }
