@@ -19,6 +19,7 @@ namespace compress {
     //_buffer[1].reserve(2);
     //_buffer[2].reserve(2);
     _thresh = std::vector<double>(3,0.);
+    _pol    = std::vector<int>(3,0);
     //_thresh.reserve(3);
     std::vector<std::vector<int> > tmp(3,std::vector<int>(2,0));
     _buffer = tmp;
