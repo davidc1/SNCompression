@@ -38,7 +38,10 @@ namespace compress {
     void SetBlockSize(int b) { _block = b; }
     void SetBaselineThresh(double b) { _deltaB = b*b; }
     void SetVarianceThresh(double v) { _deltaV = v*v; }
+
     void SetCompressThresh(double tU, double tV, double tY) { _thresh[0] = tU; _thresh[1] = tV; _thresh[2] = tY; }
+    void SetPolarity(int polu, int polv, int poly) {_pol[0] = polu; _pol[1] = polv; _pol[2] = poly; }
+
     void SetMaxADC(int ADC) { _maxADC = ADC; }
     void SetUplaneBuffer(int pre, int post) { _buffer[0][0] = pre; _buffer[0][1] = post; }
     void SetVplaneBuffer(int pre, int post) { _buffer[1][0] = pre; _buffer[1][1] = post; }
@@ -55,8 +58,11 @@ namespace compress {
     // Value of Baseline Threshold for initial stage of compression
     double _deltaB; // max difference for Baseline tolerared
     double _deltaV; // max difference for Variance tolerated
-    std::vector<double> _thresh; // threshold to trigger waveform readout (per plane)
+    std::vector<double> _thresh;
+    std::vector<int> _pol;
     
+
+
     // Buffer Tick number for various planes
     // structure: [ [Upre, Upost], [Vpre, Vpost], [Ypre, Ypost] ]
     std::vector<std::vector<int> > _buffer;
