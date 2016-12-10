@@ -83,6 +83,12 @@ namespace larlite {
       fillSimchMap(_event_simch);
     }
 
+    //  map channel number to entry index
+    _channel_to_index_map.clear();
+    _channel_to_index_map = std::vector<int>( ::larutil::Geometry::GetME()->Nchannels(), -1);
+    for (size_t i=0; i < _event_wf->size(); i++)
+      _channel_to_index_map.at( _event_wf->at(i).Channel() ) = (int)i;
+
     _time_read = _watch.RealTime();
 
     // clear place-holder for new, compressed, waveforms
@@ -167,7 +173,16 @@ namespace larlite {
     return true;
   }
 
+  // apply compression to a specific channel
+  void ExecuteCompression::ApplyCompressionChannel(const size_t ch){
 
+    if (_channel_to_index_map.size() <= ch) return;
+    if ( _channel_to_index_map[ch] == -1 ) return;
+
+    ApplyCompression( _channel_to_index_map[ch] );
+  }
+  
+  
   // function where compression is applied on a single wf
   void ExecuteCompression::ApplyCompression(const size_t i)
   {

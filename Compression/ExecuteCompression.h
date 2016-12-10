@@ -86,6 +86,9 @@ namespace larlite {
     /// function that calls the compression algo
     void ApplyCompression(const size_t i);
 
+    // apply compression given channel number
+    void ApplyCompressionChannel(const size_t ch);
+
     /// get number of waveforms saved
     int GetNumWFs() { return _event_wf->size(); }
 
@@ -170,6 +173,8 @@ namespace larlite {
     TStopwatch _watch;
     double _time_loop, _time_get, _time_algo, _time_study, _time_calc, _time_swap, _time_ide, _time_read;
 
+    // vector linking channel number to entry in vector of raw-digits
+    std::vector<int> _channel_to_index_map;
 
   };
 }

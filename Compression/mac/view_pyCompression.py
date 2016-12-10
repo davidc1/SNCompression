@@ -80,7 +80,7 @@ while my_proc.process_event():
         if (nextevent == True):
             nextevent = False;
             break;
-        compAna.ApplyCompression(chan)
+        compAna.ApplyCompressionChannel(chan)
         if (compView.GetPlane() != 2) : continue
         if (compView.GetNumOutWFs() >= 1):
             print 'Evt: %i  Chan: %i  Plane: %i  --> Out WFs: %i'%(compView.GetEvtNum(),compView.GetChan(),compView.GetPlane(),compView.GetNumOutWFs())
