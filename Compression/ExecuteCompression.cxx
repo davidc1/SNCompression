@@ -268,6 +268,7 @@ namespace larlite {
     CalculateCompression(ADCwaveform, ranges, postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
+    _compress_algo->Reset();
     // 12) Replace .root data file *event_wf* with new waveforms
     _watch.Start();
     if (_saveOutput)
