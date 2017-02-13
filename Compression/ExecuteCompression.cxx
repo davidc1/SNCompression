@@ -28,10 +28,17 @@ namespace larlite {
     _compress_tree->Branch("_compressionU",&_compressionU,"compressionU/D");
     _compress_tree->Branch("_compressionV",&_compressionV,"compressionV/D");
     _compress_tree->Branch("_compressionY",&_compressionY,"compressionY/D");
+    //Anya variables: 
+ 
+    _compress_tree->Branch("_compression_huff",&_compression_huff,"compression_huff/D");
+    _compress_tree->Branch("_compressionU_huff",&_compressionU_huff,"compressionU_huff/D");
+    _compress_tree->Branch("_compressionV_huff",&_compressionV_huff,"compressionV_huff/D");
+    _compress_tree->Branch("_compressionY_huff",&_compressionY_huff,"compressionY_huff/D");
 
     if (_compress_ch) delete _compress_ch;
     _compress_ch = new TTree("_compress_ch","Channel-by-Channel Compress. Tree");
     _compress_ch->Branch("_ch_compression",&_ch_compression,"ch_compression/D");
+    _compress_ch->Branch("_ch_compression_huff",&_ch_compression_huff,"ch_compression_huff/D");//Anya variable
     _compress_ch->Branch("_ch",&_ch,"ch/I");
     _compress_ch->Branch("_pl",&_pl,"pl/I");
 
@@ -40,6 +47,12 @@ namespace larlite {
     _compressionY = 0;
     _compression  = 0;
     _NplU = _NplV = _NplY = 0;
+    //Anya variables
+    _compressionU_huff = 0;
+    _compressionV_huff = 0;
+    _compressionY_huff = 0;
+    _compression_huff  = 0;
+
 
     _evt = 0;
 
@@ -97,6 +110,7 @@ namespace larlite {
     // reset variables that hold compression factor
     _inTicks  = 0;
     _outTicks = 0;
+    //_postHuffTicks = 0; //Anya variable
 
     // if we want to use the viewer -> skip this
     if (_compress_view)
@@ -222,6 +236,7 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
+    int postHuffwords = _compress_algo->GetHuffman();
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -249,7 +264,7 @@ namespace larlite {
     }
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
-    CalculateCompression(ADCwaveform, ranges, pl, ch);
+    CalculateCompression(ADCwaveform, ranges, postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
     _compress_algo->Reset();
@@ -304,25 +319,29 @@ namespace larlite {
 
   
   void ExecuteCompression::CalculateCompression(const std::vector<short> &beforeADCs,
-						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,
+						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff,
 						int pl, int ch){
     
     double inTicks = beforeADCs.size();
     double outTicks = 0;
-    
+    const int wordsize = 16;    
+
     for (size_t n=0; n < ranges.size(); n++)
       outTicks += (ranges[n].second-ranges[n].first);
 
     if (pl==0){
       _compressionU += outTicks/inTicks;
+      _compressionU_huff += (postHuff * wordsize)/inTicks;//Anya variable
       _NplU += 1;
     }
     else if (pl==1){
       _compressionV += outTicks/inTicks;
+      _compressionV_huff += (postHuff * wordsize)/inTicks;//Anya variable
       _NplV += 1;
     }
     else if (pl==2){
       _compressionY += outTicks/inTicks;
+      _compressionY_huff += (postHuff * wordsize)/inTicks;//Anya variable
       _NplY += 1;
     }
     else
@@ -331,6 +350,10 @@ namespace larlite {
     _ch_compression = outTicks/inTicks;
 
     _compression += outTicks/inTicks;
+
+    //Anya variables:
+    _ch_compression_huff = (postHuff * wordsize)/inTicks;
+    _compression_huff += (postHuff * wordsize)/inTicks;
 
     _ch = ch;
     _pl = pl;

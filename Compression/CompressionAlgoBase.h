@@ -44,6 +44,9 @@ namespace compress {
     /// Get range of output waveforms
     virtual const std::vector<std::pair< compress::tick, compress::tick> > GetOutputRanges() { return _timeRange; }
     
+    ///Get amt of words post Huffman compression
+    virtual const int GetHuffman() { return postHuffwords; }
+
     /// Close Algorithm (maybe to write trees & such)
     virtual void EndProcess(TFile* fout=nullptr) { if (fout && _verbose) { std::cout << "File name is: " << fout << std::endl; } }
  
@@ -83,6 +86,12 @@ namespace compress {
     tick _begin;
     /// iterator pointing to end of input wf
     tick _end;
+    //Anya variable for Huffman:
+    tick _nextTick;
+    tick this_Tick;
+    tick next_Tick;
+    int postHuffwords;
+
 
     /// Vector where to hold the various baselines for the various blocks
     std::vector<double> _baselines;

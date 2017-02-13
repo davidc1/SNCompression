@@ -77,7 +77,7 @@ namespace larlite {
 
     /// Calculate compression: keep holders for number of ticks in original waveform and number of ticks in compressed waveforms
     void CalculateCompression(const std::vector<short> &beforeADCs,
-			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges,
+			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges, int postHuff,
 			      int pl, int ch);
 
     /// Decide here if to save output
@@ -166,7 +166,13 @@ namespace larlite {
     int    _pl;
     // keep track of number of wires scanned per plane (to calculate compession)
     int _NplU, _NplV, _NplY;
-
+	//Anya variables:
+    double _compression_huff;
+    double _compressionU_huff;
+    double _compressionV_huff;
+    double _compressionY_huff;
+    double _ch_compression_huff;
+    double _postHuffmanwords;
     // timer to keep track of time-performance
     TStopwatch _evtwatch; // full event time
     TStopwatch _loopwatch;
