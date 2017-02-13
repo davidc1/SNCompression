@@ -111,6 +111,10 @@ namespace larlite {
     void SwapData(const larlite::rawdigit* tpc_data,
 		  const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
 
+    /// calculate Huffman compression (returns number of huffman words saved)
+    int HuffmanCompression(const larlite::rawdigit* tpc_data,
+			   const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
+
     // check if chanels is in range
     bool isinrange(unsigned int ch);
     

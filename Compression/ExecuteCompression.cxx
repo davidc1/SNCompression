@@ -264,11 +264,11 @@ namespace larlite {
     }
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
+    postHuffwords = HuffmanCompression(rawwf,ranges);
     CalculateCompression(ADCwaveform, ranges, postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
-    _compress_algo->Reset();
-    // 11) Replace .root data file *event_wf* with new waveforms
+    // 12) Replace .root data file *event_wf* with new waveforms
     _watch.Start();
     if (_saveOutput)
       SwapData(rawwf, ranges);
@@ -315,6 +315,34 @@ namespace larlite {
     _event_wire->emplace_back( thiswire );
     
     return;
+  }
+
+
+  int ExecuteCompression::HuffmanCompression(const larlite::rawdigit *tpc_data,
+					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
+  {
+
+    int HuffWordsTOTAL;
+    
+    // calculate the Huffman number of words for this channel
+    
+    UInt_t chan = tpc_data->Channel();
+    
+    //loop over new waveforms created
+    for (size_t n=0; n < ranges.size(); n++){
+      // prepare output waveform
+      compress::tick t;
+      float first_tick = (float)*(ranges[n].first);
+      std::vector<float> out;
+      for (t = ranges[n].first; t < ranges[n].second; t++)
+	out.push_back( (float)*t - first_tick );
+
+      // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
+      // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
+      
+    }// for all saved ROIs
+    
+    return HuffWordsTOTAL;
   }
 
   
