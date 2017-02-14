@@ -322,9 +322,9 @@ namespace larlite {
 					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
   {
 
-    int postHuffwords;
-    int postHuffmanbits;
-    
+    int postHuffwords = 0;
+    int postHuffmanbits = 0;
+    const int availablewordbits = 15;
     // calculate the Huffman number of words for this channel
     
     UInt_t chan = tpc_data->Channel();
@@ -338,25 +338,25 @@ namespace larlite {
       for (t = ranges[n].first; t < ranges[n].second; t++)
 	out.push_back( (float)*t - first_tick );
 
-        if ( out[t] == 0 ){ 
+        if ( out[n] == 0 ){ 
          if ( postHuffmanbits + 1 < availablewordbits) { postHuffmanbits += 1; }   
          else {postHuffwords += 1; postHuffmanbits = 1; }}                         
-        else if ( out[t] ==-1 ){                                      
+        else if ( out[n] ==-1 ){                                      
           if (postHuffmanbits + 2 < availablewordbits ) { postHuffmanbits += 2; }  
           else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
-        else if ( out[t] == 1 ){                                      
+        else if ( out[n] == 1 ){                                      
          if (postHuffmanbits + 3 < availablewordbits ) { postHuffmanbits += 3; }   
           else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
-        else if ( out[t] ==-2 ){                                      
+        else if ( out[n] ==-2 ){                                      
          if (postHuffmanbits + 4 < availablewordbits ) { postHuffmanbits += 4; }   
           else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
-        else if ( out[t] == 2 ){                                      
+        else if ( out[n] == 2 ){                                      
          if (postHuffmanbits + 5 < availablewordbits ) { postHuffmanbits += 5; }   
           else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
-        else if ( out[t] ==-3 ){                                      
+        else if ( out[n] ==-3 ){                                      
          if (postHuffmanbits + 6 < availablewordbits ) { postHuffmanbits += 6; }   
           else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
-        else if ( out[t] == 3 ){                                      
+        else if ( out[n] == 3 ){                                      
          if (postHuffmanbits + 7 < availablewordbits ) { postHuffmanbits += 7; }   
           else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
  

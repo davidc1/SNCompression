@@ -176,7 +176,7 @@ namespace larlite {
     double _compressionV_huff;
     double _compressionY_huff;
     double _ch_compression_huff;
-    double _postHuffmanwords;
+    double _postHuffwords;
     // timer to keep track of time-performance
     TStopwatch _evtwatch; // full event time
     TStopwatch _loopwatch;
