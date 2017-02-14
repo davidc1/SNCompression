@@ -236,7 +236,6 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
-    int postHuffwords = _compress_algo->GetHuffman();
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -264,8 +263,8 @@ namespace larlite {
     }
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
-    postHuffwords = HuffmanCompression(rawwf,ranges);
-    CalculateCompression(ADCwaveform, ranges, postHuffwords, pl, ch);
+    _postHuffwords = HuffmanCompression(rawwf,ranges);
+    CalculateCompression(ADCwaveform, ranges, _postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
     _compress_algo->Reset();
@@ -323,7 +322,8 @@ namespace larlite {
 					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
   {
 
-    int HuffWordsTOTAL;
+    int postHuffwords;
+    int postHuffmanbits;
     
     // calculate the Huffman number of words for this channel
     
@@ -338,12 +338,34 @@ namespace larlite {
       for (t = ranges[n].first; t < ranges[n].second; t++)
 	out.push_back( (float)*t - first_tick );
 
+        if ( out[t] == 0 ){ 
+         if ( postHuffmanbits + 1 < availablewordbits) { postHuffmanbits += 1; }   
+         else {postHuffwords += 1; postHuffmanbits = 1; }}                         
+        else if ( out[t] ==-1 ){                                      
+          if (postHuffmanbits + 2 < availablewordbits ) { postHuffmanbits += 2; }  
+          else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
+        else if ( out[t] == 1 ){                                      
+         if (postHuffmanbits + 3 < availablewordbits ) { postHuffmanbits += 3; }   
+          else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
+        else if ( out[t] ==-2 ){                                      
+         if (postHuffmanbits + 4 < availablewordbits ) { postHuffmanbits += 4; }   
+          else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
+        else if ( out[t] == 2 ){                                      
+         if (postHuffmanbits + 5 < availablewordbits ) { postHuffmanbits += 5; }   
+          else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
+        else if ( out[t] ==-3 ){                                      
+         if (postHuffmanbits + 6 < availablewordbits ) { postHuffmanbits += 6; }   
+          else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
+        else if ( out[t] == 3 ){                                      
+         if (postHuffmanbits + 7 < availablewordbits ) { postHuffmanbits += 7; }   
+          else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
+ 
       // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
       // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
       
     }// for all saved ROIs
     
-    return HuffWordsTOTAL;
+    return postHuffwords;
   }
 
   
