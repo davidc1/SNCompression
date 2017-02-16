@@ -330,13 +330,12 @@ namespace larlite {
     const size_t one = 1;
 
     // calculate the Huffman number of words for this channel
-    out.push_back((float)*(ranges[2].first) - (float)*(ranges[1].first));
        //loop over new wavefors created
-       for (size_t n=1; n < ranges.size(); n++){
+       for (size_t n=0; n < ranges.size(); n++){
          // prepare output waveform
          compress::tick t;
          float first_tick = (float)*(ranges[n].first);
-         //for (t = ranges[n].first; t < ranges[n].second; t++)
+         for (t = ranges[n].first; t < ranges[n].second; t++)
    	out.push_back( (float)*t - first_tick );
         }
 
@@ -386,15 +385,13 @@ namespace larlite {
     
     UInt_t chan = tpc_data->Channel();
     if ( chan < 2400 ) {   
-       //loop over new waveforms created
-       for (size_t n=1; n < ranges.size(); n++){
-         // prepare output waveform
-         compress::tick t;
-         float first_tick = (float)*(ranges[n-one].first);
-         t = ranges[n].first;
-         //for (t = ranges[n].first; t < ranges[n].second; t++)
-   	out.push_back( (float)*t - first_tick );
-       }
+        for (size_t n=0; n < ranges.size(); n++){
+          // prepare output waveform
+          compress::tick t;
+          float first_tick = (float)*(ranges[n].first);
+          for (t = ranges[n].first; t < ranges[n].second; t++)
+    	out.push_back( (float)*t - first_tick );
+         }
        for (size_t n=0; n < ranges.size(); n++){
            if ( out[n] == 0 ){ 
             if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
@@ -439,15 +436,13 @@ namespace larlite {
     // calculate the Huffman number of words for this channel
     UInt_t chan = tpc_data->Channel();
     if ( chan > 2399 && chan < 4800) {   
-       //loop over new waveforms created
-       for (size_t n=1; n < ranges.size(); n++){
+       for (size_t n=0; n < ranges.size(); n++){                   
          // prepare output waveform
          compress::tick t;
-         float first_tick = (float)*(ranges[n-one].first);
-         t = ranges[n].first;
-         //for (t = ranges[n].first; t < ranges[n].second; t++)
-   	out.push_back( (float)*t - first_tick );
-       }
+         float first_tick = (float)*(ranges[n].first);
+         for (t = ranges[n].first; t < ranges[n].second; t++)
+       out.push_back( (float)*t - first_tick );
+        }
        for (size_t n = 0; n < ranges.size(); n++) {
            if ( out[n] == 0 ){ 
             if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
@@ -492,15 +487,13 @@ namespace larlite {
     // calculate the Huffman number of words for this channel
      UInt_t chan = tpc_data->Channel();
      if (chan > 4799) { 
-        //loop over new waveforms created
-        for (size_t n=1; n < ranges.size(); n++){
+        for (size_t n=0; n < ranges.size(); n++){
           // prepare output waveform
           compress::tick t;
-          float first_tick = (float)*(ranges[n-one].first);
-          t = ranges[n].first;
-          //for (t = ranges[n].first; t < ranges[n].second; t++)
+          float first_tick = (float)*(ranges[n].first);
+          for (t = ranges[n].first; t < ranges[n].second; t++)
     	out.push_back( (float)*t - first_tick );
-        }
+         }
        for (size_t n = 0; n < ranges.size(); n++) {
            if ( out[n] == 0 ){ 
             if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
