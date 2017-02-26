@@ -120,6 +120,7 @@ namespace larlite {
     int HuffmanCompressionV(const larlite::rawdigit* tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
 
     int HuffmanCompressionY(const larlite::rawdigit* tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
+    void ReadoutTicks( const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
     // check if chanels is in range
     bool isinrange(unsigned int ch);
     
@@ -175,6 +176,7 @@ namespace larlite {
     int    _pl;
     // keep track of number of wires scanned per plane (to calculate compession)
     int _NplU, _NplV, _NplY;
+    int _NplUh, _NplVh, _NplYh;
 	//Anya variables:
     double _compression_huff;
     double _compressionU_huff;
