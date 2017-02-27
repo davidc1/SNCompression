@@ -272,11 +272,8 @@ namespace larlite {
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
     _postHuffwords = HuffmanCompression(rawwf,ranges);
-    _postHuffwordsU = HuffmanCompressionU(rawwf,ranges);
-    _postHuffwordsV = HuffmanCompressionV(rawwf,ranges);
-    _postHuffwordsY = HuffmanCompressionY(rawwf,ranges);
     ReadoutTicks(ranges);
-    CalculateCompression(ADCwaveform, ranges, _postHuffwords, _postHuffwordsU, _postHuffwordsV, _postHuffwordsY, pl, ch);
+    CalculateCompression(ADCwaveform, ranges, _postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
     _compress_algo->Reset();
@@ -346,12 +343,8 @@ return;
     int postHuffmanbits = 4;
     const int availablewordbits = 15;
     std::vector<float> out;
- //   const size_t one = 1;
 
-    // calculate the Huffman number of words for this channel
-       //loop over new wavefors created
        for (size_t n=0; n < ranges.size(); n++){
-         // prepare output waveform
          compress::tick t;
          float first_tick = (float)*(ranges[n].first);
          for (t = ranges[n].first; t < ranges[n].second; t++)
@@ -381,187 +374,18 @@ return;
             if (postHuffmanbits + 7 <= availablewordbits ) { postHuffmanbits += 7; }   
              else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
            else if ( out[n] > 3 || out[n] < -3 ) { postHuffwords += 1; postHuffmanbits = 15; }
-	   
-         // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
-         // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
              
        }// for all saved ROI
     
     return postHuffwords;
   }
-
-
-
-  int ExecuteCompression::HuffmanCompressionU(const larlite::rawdigit *tpc_data,
-					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
-  {
-
-    int postHuffwordsU = 1;
-    int postHuffmanbits = 4;
-    const int availablewordbits = 15;
-    std::vector<float> out;
-//    const size_t one = 1;
-                               // calculate the Huffman number of words for this channel
-    
-    UInt_t chan = tpc_data->Channel();
-    if ( chan < 2400 ) {   
-        _NplUh += 1;
-        for (size_t n=0; n < ranges.size(); n++){
-          // prepare output waveform
-          compress::tick t;
-          float first_tick = (float)*(ranges[n].first);
-          for (t = ranges[n].first; t < ranges[n].second; t++)
-    	out.push_back( (float)*t - first_tick );
-        std::cout << *t << ", " << std::endl;
-         }
-       for (size_t n=0; n < ranges.size(); n++){
-           if ( out[n] == 0 ){ 
-            if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
-            else {postHuffwordsU += 1; postHuffmanbits = 1; }}                         
-           else if ( out[n] ==-1 ){                                      
-             if (postHuffmanbits + 2 <= availablewordbits ) { postHuffmanbits += 2; }  
-             else{ postHuffwordsU += 1; postHuffmanbits = 2; }}                        
-           else if ( out[n] == 1 ){                                      
-            if (postHuffmanbits + 3 <= availablewordbits ) { postHuffmanbits += 3; }   
-             else{ postHuffwordsU += 1; postHuffmanbits = 3;  }}                       
-           else if ( out[n] ==-2 ){                                      
-            if (postHuffmanbits + 4 <= availablewordbits ) { postHuffmanbits += 4; }   
-             else{ postHuffwordsU += 1; postHuffmanbits = 4;  }}                       
-           else if ( out[n] == 2 ){                                      
-            if (postHuffmanbits + 5 <= availablewordbits ) { postHuffmanbits += 5; }   
-             else{ postHuffwordsU += 1; postHuffmanbits = 5;  }}                       
-           else if ( out[n] ==-3 ){                                      
-            if (postHuffmanbits + 6 <= availablewordbits ) { postHuffmanbits += 6; }   
-             else{ postHuffwordsU += 1; postHuffmanbits = 6;  }}                       
-           else if ( out[n] == 3 ){                                      
-            if (postHuffmanbits + 7 <= availablewordbits ) { postHuffmanbits += 7; }   
-             else{ postHuffwordsU += 1; postHuffmanbits = 7;  }}                       
-           else if ( out[n] > 3 || out[n] < -3 ) { postHuffwordsU += 1; postHuffmanbits = 15; }
-
-         // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
-         // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
-        
-       }// for all saved ROIs
-    }
-    
-    return postHuffwordsU;
-  }
-  int ExecuteCompression::HuffmanCompressionV(const larlite::rawdigit *tpc_data,
-					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
-  {
-
-    int postHuffwordsV = 1;
-    int postHuffmanbits = 4;
-    const int availablewordbits = 15;
-    std::vector<float> out;
- //   const size_t one = 1;
-
-    // calculate the Huffman number of words for this channel
-    UInt_t chan = tpc_data->Channel();
-    if ( chan > 2399 && chan < 4800) {   
-        _NplVh += 1;
-       for (size_t n=0; n < ranges.size(); n++){                   
-         // prepare output waveform
-         compress::tick t;
-         float first_tick = (float)*(ranges[n].first);
-         for (t = ranges[n].first; t < ranges[n].second; t++)
-       out.push_back( (float)*t - first_tick );
-        std::cout << *t << ", " << std::endl;
-        }
-       for (size_t n = 0; n < ranges.size(); n++) {
-           if ( out[n] == 0 ){ 
-            if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
-            else {postHuffwordsV += 1; postHuffmanbits = 1; }}                         
-           else if ( out[n] ==-1 ){                                      
-             if (postHuffmanbits + 2 <= availablewordbits ) { postHuffmanbits += 2; }  
-             else{ postHuffwordsV += 1; postHuffmanbits = 2; }}                        
-           else if ( out[n] == 1 ){                                      
-            if (postHuffmanbits + 3 <= availablewordbits ) { postHuffmanbits += 3; }   
-             else{ postHuffwordsV += 1; postHuffmanbits = 3;  }}                       
-           else if ( out[n] ==-2 ){                                      
-            if (postHuffmanbits + 4 <= availablewordbits ) { postHuffmanbits += 4; }   
-             else{ postHuffwordsV += 1; postHuffmanbits = 4;  }}                       
-           else if ( out[n] == 2 ){                                      
-            if (postHuffmanbits + 5 <= availablewordbits ) { postHuffmanbits += 5; }   
-             else{ postHuffwordsV += 1; postHuffmanbits = 5;  }}                       
-           else if ( out[n] ==-3 ){                                      
-            if (postHuffmanbits + 6 <= availablewordbits ) { postHuffmanbits += 6; }   
-             else{ postHuffwordsV += 1; postHuffmanbits = 6;  }}                       
-           else if ( out[n] == 3 ){                                      
-            if (postHuffmanbits + 7 <= availablewordbits ) { postHuffmanbits += 7; }   
-             else{ postHuffwordsV += 1; postHuffmanbits = 7;  }}                       
-           else if ( out[n] > 3 || out[n] < -3 ) { postHuffwordsV +=1; postHuffmanbits = 15; }
-                                                                                                        
-         // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
-         // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
-         
-       }// for all saved ROIs
-    } 
-    return postHuffwordsV;
-  }
-
-  int ExecuteCompression::HuffmanCompressionY(const larlite::rawdigit *tpc_data,
-					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
-  {
-
-    int postHuffwordsY = 1;
-    int postHuffmanbits = 3;
-    const int availablewordbits = 15;
-    std::vector<float> out;
-   // const size_t one = 1;
-
-    // calculate the Huffman number of words for this channel
-     UInt_t chan = tpc_data->Channel();
-     if (chan > 4799) { 
-        _NplYh += 1;
-        for (size_t n=0; n < ranges.size(); n++){
-          // prepare output waveform
-          compress::tick t;
-          float first_tick = (float)*(ranges[n].first);
-          for (t = ranges[n].first; t < ranges[n].second; t++)
-    	out.push_back( (float)*t - first_tick );
-        std::cout << *t << ", " << std::endl;
-         }
-       for (size_t n = 0; n < ranges.size(); n++) {
-           if ( out[n] == 0 ){ 
-            if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
-            else {postHuffwordsY += 1; postHuffmanbits = 1; }}                         
-           else if ( out[n] ==-1 ){                                      
-             if (postHuffmanbits + 2 <= availablewordbits ) { postHuffmanbits += 2; }  
-             else{ postHuffwordsY += 1; postHuffmanbits = 2; }}                        
-           else if ( out[n] == 1 ){                                      
-            if (postHuffmanbits + 3 <= availablewordbits ) { postHuffmanbits += 3; }   
-             else{ postHuffwordsY += 1; postHuffmanbits = 3;  }}                       
-           else if ( out[n] ==-2 ){                                      
-            if (postHuffmanbits + 4 <= availablewordbits ) { postHuffmanbits += 4; }   
-             else{ postHuffwordsY += 1; postHuffmanbits = 4;  }}                       
-           else if ( out[n] == 2 ){                                      
-            if (postHuffmanbits + 5 <= availablewordbits ) { postHuffmanbits += 5; }   
-             else{ postHuffwordsY += 1; postHuffmanbits = 5;  }}                       
-           else if ( out[n] ==-3 ){                                      
-            if (postHuffmanbits + 6 <= availablewordbits ) { postHuffmanbits += 6; }   
-             else{ postHuffwordsY += 1; postHuffmanbits = 6;  }}                       
-           else if ( out[n] == 3 ){                                      
-            if (postHuffmanbits + 7 <= availablewordbits ) { postHuffmanbits += 7; }   
-             else{ postHuffwordsY += 1; postHuffmanbits = 7;  }}                       
-           else if ( out[n] > 3 || out[n] < -3 ) { postHuffwordsY +=1; postHuffmanbits = 15; }
-
-         // HERE COMPUTE HUFFMAN ALGORITHM on "out" VECTOR
-         // AND ADD NUMBER OF WORDS TO "HuffWordsTOTAL" COUNTER
-         
-       }// for all saved ROIs
-    }   
-    return postHuffwordsY;
-  }
-
   
   void ExecuteCompression::CalculateCompression(const std::vector<short> &beforeADCs,
-						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff, int postHuffU, int postHuffV, int postHuffY, 
+						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff, 
 						int pl, int ch){
     
     double inTicks = beforeADCs.size();
     double outTicks = 0;
-    const int wordsize = 16;    
 
     for (size_t n=0; n < ranges.size(); n++)
       outTicks += (ranges[n].second-ranges[n].first);
@@ -580,18 +404,24 @@ return;
     }
     else
       std::cout << "What plane? Error?" << std::endl;
+ 
+    if (pl==0){
+      _compressionU_huff += postHuff/inTicks;
+    }
+    else if (pl==1){
+      _compressionV_huff += postHuff/inTicks;
+    }
+    else if (pl==2){
+      _compressionY_huff += postHuff/inTicks;
+    }
     
     _ch_compression = outTicks/inTicks;
-
     _compression += outTicks/inTicks;
 
     //Anya variables:
     _ch_compression_huff = postHuff/inTicks;
     _compression_huff += postHuff/inTicks;
     
-    _compressionU_huff += postHuffU/inTicks;
-    _compressionV_huff += postHuffV/inTicks;
-    _compressionY_huff += postHuffY/inTicks;
 
 
     _ch = ch;

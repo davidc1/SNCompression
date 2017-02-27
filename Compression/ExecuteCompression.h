@@ -77,7 +77,7 @@ namespace larlite {
 
     /// Calculate compression: keep holders for number of ticks in original waveform and number of ticks in compressed waveforms
     void CalculateCompression(const std::vector<short> &beforeADCs,
-			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges, int postHuff, int postHuffU, int postHuffV, int postHuffY, 
+			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges, int postHuff, 
 			      int pl, int ch);
 
     /// Decide here if to save output
@@ -114,12 +114,6 @@ namespace larlite {
     /// calculate Huffman compression (returns number of huffman words saved)
     int HuffmanCompression(const larlite::rawdigit* tpc_data,
 			   const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
-
-    int HuffmanCompressionU(const larlite::rawdigit* tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
-
-    int HuffmanCompressionV(const larlite::rawdigit* tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
-
-    int HuffmanCompressionY(const larlite::rawdigit* tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
     void ReadoutTicks( const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
     // check if chanels is in range
     bool isinrange(unsigned int ch);
@@ -176,7 +170,6 @@ namespace larlite {
     int    _pl;
     // keep track of number of wires scanned per plane (to calculate compession)
     int _NplU, _NplV, _NplY;
-    int _NplUh, _NplVh, _NplYh;
 	//Anya variables:
     double _compression_huff;
     double _compressionU_huff;
@@ -184,9 +177,6 @@ namespace larlite {
     double _compressionY_huff;
     double _ch_compression_huff;
     double _postHuffwords;
-    double _postHuffwordsU;
-    double _postHuffwordsV;
-    double _postHuffwordsY;
     // timer to keep track of time-performance
     TStopwatch _evtwatch; // full event time
     TStopwatch _loopwatch;
