@@ -242,6 +242,7 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
+    std::cout << "applied compression. " << ranges.size() << " ranges found" << std::endl;
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -415,6 +416,8 @@ return;
     
     _ch_compression = outTicks/inTicks;
     _compression += outTicks/inTicks;
+
+    std::cout << "Pl : " << pl << "\t Ch : " << ch << "\t inTicks : " << inTicks << "\t outTicks : " << outTicks << "\t pstHuff : " << postHuff << std::endl;
 
     //Anya variables:
     _ch_compression_huff = postHuff/inTicks;
