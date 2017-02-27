@@ -47,7 +47,6 @@ namespace larlite {
     _compressionY = 0;
     _compression  = 0;
     _NplU = _NplV = _NplY = 0;
-    _NplUh = _NplVh = _NplYh = 0;
     //Anya variables
     _compressionU_huff = 0;
     _compressionV_huff = 0;
@@ -137,9 +136,8 @@ namespace larlite {
 
     _compress_tree->Fill();
     _NplU = _NplV = _NplY = 0;
-    _NplUh = _NplVh = _NplYh = 0;
     _compressionU = _compressionV = _compressionY = 0;
-    _compressionU_huff = _compressionU_huff = _compressionV_huff = _compressionY_huff = 0;
+    _compression_huff = _compressionU_huff = _compressionV_huff = _compressionY_huff = 0;
 
     /*
     //now take new WFs and place in event_wf vector
