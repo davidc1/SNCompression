@@ -34,6 +34,7 @@ namespace larlite {
     _compress_tree->Branch("_compressionU_huff",&_compressionU_huff,"compressionU_huff/D");
     _compress_tree->Branch("_compressionV_huff",&_compressionV_huff,"compressionV_huff/D");
     _compress_tree->Branch("_compressionY_huff",&_compressionY_huff,"compressionY_huff/D");
+    _compress_tree->Branch("_huffman_gain",&_huffman_gain,"huffman_gain/D");
 
     if (_compress_ch) delete _compress_ch;
     _compress_ch = new TTree("_compress_ch","Channel-by-Channel Compress. Tree");
@@ -52,7 +53,7 @@ namespace larlite {
     _compressionV_huff = 0;
     _compressionY_huff = 0;
     _compression_huff  = 0;
-
+    _huffman_gain = 0;
 
     _evt = 0;
 
@@ -242,7 +243,7 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
-    std::cout << "applied compression. " << ranges.size() << " ranges found" << std::endl;
+//    std::cout << "applied compression. " << ranges.size() << " ranges found" << std::endl;
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -330,52 +331,59 @@ namespace larlite {
     compress::tick t;
     for (size_t n=0 ; n < ranges.size() ; n++) {
         t = ranges[n].first;
-        std::cout << *t << ", " << std::endl;
+//       std::cout << "this tick = " <<*t << " " << std::endl;
     }
+
+     //   std::cout << ranges.size() << " = sizeof waveform" << std::endl;
 return;
 }
   int ExecuteCompression::HuffmanCompression(const larlite::rawdigit *tpc_data,
 					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
   {
 
-    int postHuffwords = 1;
-    int postHuffmanbits = 4;
+    int postHuffwords = 1; //2*(ranges.size());
+    int postHuffmanbits = 0;
     const int availablewordbits = 15;
     std::vector<float> out;
-
+ //   std::cout<< "size of ranges is " << ranges.size() << std::endl;
        for (size_t n=0; n < ranges.size(); n++){
          compress::tick t;
          float first_tick = (float)*(ranges[n].first);
-         for (t = ranges[n].first; t < ranges[n].second; t++)
-   	out.push_back( (float)*t - first_tick );
-        }
+         for (t = ranges[n].first; t < ranges[n].second; t++) {
+        	out.push_back( (float)*t - first_tick );
+        	//if(t==ranges[n].first){std::cout<< "ROI = " << n << std::endl;}
+        	//if(t==ranges[n].first){std::cout << "first tick has passed" << std::endl;}
 
-       for (size_t n=0; n < ranges.size(); n++){
+        //std::cout << "this tick " <<" value = " << (float)*t << " ADCs" << " difference from last tick = "<< ((float)*t-first_tick)<< std::endl; 
+     //   std::cout<< (float)*t << ", "; 
+                first_tick = (float)*t;
+        }}
+       for (size_t n=0; n < out.size(); n++){
            if ( out[n] == 0 ){ 
-            if ( postHuffmanbits + 1 <= availablewordbits) { postHuffmanbits += 1; }   
+            if ( (postHuffmanbits + 1) <= availablewordbits) { postHuffmanbits += 1; }   
             else {postHuffwords += 1; postHuffmanbits = 1; }}                         
            else if ( out[n] ==-1 ){                                      
-             if (postHuffmanbits + 2 <= availablewordbits ) { postHuffmanbits += 2; }  
+             if ((postHuffmanbits + 2) <= availablewordbits ) { postHuffmanbits += 2; }  
              else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
            else if ( out[n] == 1 ){                                      
-            if (postHuffmanbits + 3 <= availablewordbits ) { postHuffmanbits += 3; }   
+            if ((postHuffmanbits + 3) <= availablewordbits ) { postHuffmanbits += 3; }   
              else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
            else if ( out[n] ==-2 ){                                      
-            if (postHuffmanbits + 4 <= availablewordbits ) { postHuffmanbits += 4; }   
+            if ((postHuffmanbits + 4) <= availablewordbits ) { postHuffmanbits += 4; }   
              else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
            else if ( out[n] == 2 ){                                      
-            if (postHuffmanbits + 5 <= availablewordbits ) { postHuffmanbits += 5; }   
+            if ((postHuffmanbits + 5) <= availablewordbits ) { postHuffmanbits += 5; }   
              else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
            else if ( out[n] ==-3 ){                                      
-            if (postHuffmanbits + 6 <= availablewordbits ) { postHuffmanbits += 6; }   
+            if ((postHuffmanbits + 6) <= availablewordbits ) { postHuffmanbits += 6; }   
              else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
            else if ( out[n] == 3 ){                                      
-            if (postHuffmanbits + 7 <= availablewordbits ) { postHuffmanbits += 7; }   
+            if ((postHuffmanbits + 7) <= availablewordbits ) { postHuffmanbits += 7; }   
              else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
            else if ( out[n] > 3 || out[n] < -3 ) { postHuffwords += 1; postHuffmanbits = 15; }
              
        }// for all saved ROI
-    
+   // std::cout << "Amt of p-huffman words is " << postHuffwords << std::endl;
     return postHuffwords;
   }
   
@@ -417,7 +425,9 @@ return;
     _ch_compression = outTicks/inTicks;
     _compression += outTicks/inTicks;
 
-    std::cout << "Pl : " << pl << "\t Ch : " << ch << "\t inTicks : " << inTicks << "\t outTicks : " << outTicks << "\t pstHuff : " << postHuff << std::endl;
+    _huffman_gain = _compression/_compression_huff;
+
+ //  std::cout << "Pl : " << pl << "\t Ch : " << ch << "\t inTicks : " << inTicks << "\t outTicks : " << outTicks << "\t pstHuff : " << postHuff << std::endl;
 
     //Anya variables:
     _ch_compression_huff = postHuff/inTicks;
