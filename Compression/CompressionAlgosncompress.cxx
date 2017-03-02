@@ -110,18 +110,12 @@ namespace compress {
     // start & end tick for each Region Of Interest (ROI) saved
     tick s;
     tick e;
-    std::pair<tick,tick> thisRange; 
-    
+    std::pair<tick,tick> thisRange;     
+   
     _pl = mode;
 
     for (size_t n = 0; n < waveform.size(); n++) {
       _thisTick = _begin + n;
-      size_t bob = 1;
-      _nextTick = _begin + n + bob;
-
-      double thisTick = *_thisTick;
-      double nextTick = *_nextTick;
-
 
       if (n % (_block - 1) == 0){
 
@@ -337,50 +331,9 @@ namespace compress {
 	    if (_verbose) { std::cout << "found start-tick " << s-_begin << std::endl; }
 	  }
 	  // add bin content to temporary output waveform
-	  outputwf.push_back(*t);
-
-          for (size_t c = 0; c < outputwf.size(); c++){
-		this_Tick = _begin + c;
-		size_t one = 1;
-		next_Tick = _begin + c + one;
-
-		double thisTick = *this_Tick;
-		double nextTick = *next_Tick;
-
-		//ApplyHuffman(_this_Tick, _next_Tick);
-	       int postHuffwords = 0; //words are 16 bits long, with 4 bit headers             	
-               int postHuffmanbits = 0;                                                        
-               const int availablewordbits = 15;                                               
-                                                                                           
-               if ( nextTick - thisTick == 0 ){ 
-                if ( postHuffmanbits + 1 < availablewordbits) { postHuffmanbits += 1; }   
-                else {postHuffwords += 1; postHuffmanbits = 1; }}                         
-               else if ( nextTick - thisTick ==-1 ){                                      
-                 if (postHuffmanbits + 2 < availablewordbits ) { postHuffmanbits += 2; }  
-                 else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
-               else if ( nextTick - thisTick == 1 ){                                      
-                if (postHuffmanbits + 3 < availablewordbits ) { postHuffmanbits += 3; }   
-                 else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
-               else if ( nextTick - thisTick ==-2 ){                                      
-                if (postHuffmanbits + 4 < availablewordbits ) { postHuffmanbits += 4; }   
-                 else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
-               else if ( nextTick - thisTick == 2 ){                                      
-                if (postHuffmanbits + 5 < availablewordbits ) { postHuffmanbits += 5; }   
-                 else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
-               else if ( nextTick - thisTick ==-3 ){                                      
-                if (postHuffmanbits + 6 < availablewordbits ) { postHuffmanbits += 6; }   
-                 else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
-               else if ( nextTick - thisTick == 3 ){                                      
-                if (postHuffmanbits + 7 < availablewordbits ) { postHuffmanbits += 7; }   
-                 else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
-
-	//       _save = 0;
-
+ 	  outputwf.push_back(*t);
+	  //std::cout << "size of outputwf is " << outputwf.size() << std::endl;
           }
-
-
-	}
-	
 	else{
 	  // we are in a sub-threshold region.
 	  // 2 possibilities:
@@ -421,38 +374,6 @@ namespace compress {
 
     return;
   }
-//Anya function: Huffman compression simulation compression factor
-/*
-  int CompressionAlgosncompress::ApplyHuffman(double thisTick,double nextTick){
-       int postHuffwords = 0; //words are 16 bits long, with 4 bit headers
-       int postHuffmanbits = 0;                                                        
-       const int availablewordbits = 15;                                               
-                                                                                   
-       if ( nextTick - thisTick == 0 ){ 
-        if ( postHuffmanbits + 1 < availablewordbits) { postHuffmanbits += 1; }   
-        else {postHuffwords += 1; postHuffmanbits = 1; }}                         
-       else if ( nextTick - thisTick ==-1 ){                                      
-         if (postHuffmanbits + 2 < availablewordbits ) { postHuffmanbits += 2; }  
-         else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
-       else if ( nextTick - thisTick == 1 ){                                      
-        if (postHuffmanbits + 3 < availablewordbits ) { postHuffmanbits += 3; }   
-         else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
-       else if ( nextTick - thisTick ==-2 ){                                      
-        if (postHuffmanbits + 4 < availablewordbits ) { postHuffmanbits += 4; }   
-         else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
-       else if ( nextTick - thisTick == 2 ){                                      
-        if (postHuffmanbits + 5 < availablewordbits ) { postHuffmanbits += 5; }   
-         else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
-       else if ( nextTick - thisTick ==-3 ){                                      
-        if (postHuffmanbits + 6 < availablewordbits ) { postHuffmanbits += 6; }   
-         else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
-       else if ( nextTick - thisTick == 3 ){                                      
-        if (postHuffmanbits + 7 < availablewordbits ) { postHuffmanbits += 7; }   
-         else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
-       postHuffwords = _postHuffmanwords; 
-
-  return postHuffwords;
-  } */
 
   bool CompressionAlgosncompress::PassThreshold(double thisADC, double base){
 
