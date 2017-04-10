@@ -27,11 +27,12 @@ my_proc.set_ana_output_file("");
 my_proc.set_output_file("sn_hits.root")
 
 hitmaker = fmwk.SNHitReco()
-hitmaker.SetWireProducer()
+hitmaker.SetWireProducer("caldata")
 hitmaker.SetHitProducer("snhit")
 my_proc.add_process(hitmaker)
 
-#my_proc.set_data_to_write(fmwk.data.kHit,'rawhit')
+my_proc.set_data_to_write(fmwk.data.kHit,'snhit')
+my_proc.set_data_to_write(fmwk.data.kWire,'caldata')
 #my_proc.set_data_to_write(fmwk.data.kRawDigit,'daq')
 
 
