@@ -81,7 +81,7 @@ namespace larlite {
 
 	}// for all ADC ticks in waveform
 
-	if (amplitude < 100) continue;
+	//if (amplitude < 100) continue;
 
 	// grab the start time of the ROI w.r.t. the beginning of the 1st frame in the
 	// event.
@@ -91,7 +91,7 @@ namespace larlite {
 	larlite::hit hit;
 	hit.set_time_range(peak + ROIstart - 27, peak + ROIstart + 28);
 	hit.set_time_peak(peak + ROIstart,0.);
-	hit.set_time_rms(10);//0.4/amplitude);
+	hit.set_time_rms(0.4 * area / amplitude);
 	hit.set_amplitude(amplitude,0.);
 	hit.set_sumq(area);
 	hit.set_integral(area,0.);
@@ -109,15 +109,10 @@ namespace larlite {
 	hit.set_signal_type(sigt);
 	hit.set_wire(wire);
 
-	std::cout << "New Hit @ tick " << peak + ROIstart << " @ chan " << ch << " @ pl " << wire.Plane << std::endl
-		  << "with amplitude : " << amplitude << " area : " << area << std::endl << std::endl;
-
 	ev_hits->push_back(hit);
 	
       }// for all ROIs in the wire
     }// loop thrugh wires
-
-    std::cout << "created " << ev_hits->size() << " new hits" << std::endl;
 
     return true;
   }
