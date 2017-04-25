@@ -4,6 +4,10 @@
 #include "CompressionAlgosncompress.h"
 #include <limits>
 #include <cstddef>
+#include <iostream>
+#include <cstring>
+#include <fstream>
+
 
 namespace compress {
   
@@ -18,7 +22,7 @@ namespace compress {
     //_buffer[0].reserve(2);
     //_buffer[1].reserve(2);
     //_buffer[2].reserve(2);
-    _thresh = std::vector<double>(3,0.);
+    _thresh = std::vector<double>(8256,0.);//(3,0.)
     _pol = std::vector<int>(3,0.);
     //_thresh.reserve(3);
     std::vector<std::vector<int> > tmp(3,std::vector<int>(2,0));
@@ -30,6 +34,7 @@ namespace compress {
     if (_algo_tree) { delete _algo_tree; }
     _algo_tree = new TTree("_algo_tree","Algorithm-specific Tree");
     _algo_tree->Branch("_pl",&_pl,"pl/I");
+    _algo_tree->Branch("_ch",&_ch,"ch/I");
     _algo_tree->Branch("_v1",&_v1,"v1/I");
     _algo_tree->Branch("_v2",&_v2,"v2/I");
     _algo_tree->Branch("_v3",&_v3,"v3/I");
@@ -71,6 +76,7 @@ namespace compress {
     _algo_tree->Branch("_channel",&_channel,"channel/I");
     _algo_tree->Branch("_postHuffmanwords",&_postHuffmanwords,"postHuffmanwords/I");
  }
+
   
   void CompressionAlgosncompress::SetUVYplaneBuffer(int upre, int upost, int vpre, int vpost, int ypre, int ypost){
     
@@ -375,37 +381,53 @@ namespace compress {
     return;
   }
 
+void CompressionAlgosncompress::SetCompressThresh(std::string th_file){
+std::ifstream thresh_file(th_file.c_str());
+int a;
+double b,c,d,e,f,g;
+
+while(thresh_file >> a >> b >> c >> d >> e >> f >> g)
+     _thresh.push_back(b);
+
+thresh_file.close();
+}
+
   bool CompressionAlgosncompress::PassThreshold(double thisADC, double base){
 
-    //BEGIN ANYA EDIT
+    //BEGIN ANYA EDIT    
+    for(int _a=0; _a<8256; _a++){
+    if( _a<2400) {_pl=0;}
+    if( _a>=2400 && _a<4800 ){_pl=1;}
+    if( _a>=4800 ){ _pl=2; } 
+
 
     if (_pol[_pl] == 0){ //unipolar setting set at command line
 
         //if positive threshold
-	  if (_thresh[_pl] >= 0){
-          if (thisADC > base + _thresh[_pl])
+	  if (_thresh[_a] >= 0){
+          if (thisADC > base + _thresh[_a])
     	return true;
        }
 
 	// if negative threshold
         else{
-          if (thisADC < base + _thresh[_pl])
+          if (thisADC < base + _thresh[_a])
     	return true;
         }
 
 	  }
 
     else { //bipolar setting set at command line
-      if  (thisADC >= base + std::abs(_thresh[_pl])) {
+      if  (thisADC >= base + std::abs(_thresh[_a])) {
 	    return true;
 	  }
 
-      if (thisADC <= base - std::abs(_thresh[_pl])) {
+      if (thisADC <= base - std::abs(_thresh[_a])) {
 	      return true;
 	    }
 	  }
     //END ANYA EDIT
-    
+    }
     return false;
   }
   
