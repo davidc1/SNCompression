@@ -40,7 +40,7 @@ namespace compress {
     void SetVarianceThresh(double v) { _deltaV = v*v; }
 
     //void SetCompressThresh(double tU, double tV, double tY) { _thresh[0] = tU; _thresh[1] = tV; _thresh[2] = tY; }
-    void SetCompressThresh(std::string th_file)
+    void SetCompressThresh(std::string th_file);
     void SetPolarity(double ubu, double ubv, double uby) {_pol[0] = ubu; _pol[1] = ubv; _pol[2] = uby; }
 
     void SetMaxADC(int ADC) { _maxADC = ADC; }
