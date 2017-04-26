@@ -384,9 +384,9 @@ namespace compress {
 void CompressionAlgosncompress::SetCompressThresh(std::string th_file){
 std::ifstream thresh_file(th_file.c_str());
 int a;
-double b,c,d,e,f,g;
+double b; //,c,d,e,f,g;
 
-while(thresh_file >> a >> b >> c >> d >> e >> f >> g)
+while(thresh_file >> a >> b) //>> c >> d >> e >> f >> g)
      _thresh.push_back(b);
 
 thresh_file.close();
@@ -406,12 +406,14 @@ thresh_file.close();
         //if positive threshold
 	  if (_thresh[_a] >= 0){
           if (thisADC > base + _thresh[_a])
+          std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
        }
 
 	// if negative threshold
         else{
           if (thisADC < base + _thresh[_a])
+          std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
         }
 
