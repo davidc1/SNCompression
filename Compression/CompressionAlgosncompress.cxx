@@ -384,12 +384,21 @@ namespace compress {
 void CompressionAlgosncompress::SetCompressThresh(std::string th_file){
 std::ifstream thresh_file(th_file.c_str());
 int a;
-double b; //,c,d,e,f,g;
+std::string e,g;
+double b,c,d,f;
+//std::cout << "th_file " << 
 
-while(thresh_file >> a >> b) //>> c >> d >> e >> f >> g)
-     _thresh.push_back(b);
-
+while(thresh_file.good()){
+     thresh_file >> a >> b >> c >> d >> e >> f >> g;
+     _thresh[a-1] = b;
+//     std::cout << "channel " << a << " threshold= " << b << " vector " << _thresh[a-1] << std::endl;
+}
 thresh_file.close();
+
+for(int j=0; j<_thresh.size() ;j++){
+//std::cout << "channel.v " << j << " threshold.v= " << _thresh[j] << std::endl;
+}
+
 }
 
   bool CompressionAlgosncompress::PassThreshold(double thisADC, double base){
@@ -406,14 +415,14 @@ thresh_file.close();
         //if positive threshold
 	  if (_thresh[_a] >= 0){
           if (thisADC > base + _thresh[_a])
-          std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
+    //      std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
        }
 
 	// if negative threshold
         else{
           if (thisADC < base + _thresh[_a])
-          std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
+      //         std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
         }
 
