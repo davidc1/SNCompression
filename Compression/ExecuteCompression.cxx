@@ -209,7 +209,7 @@ namespace larlite {
   {
 
     const larlite::rawdigit* rawwf = &(_event_wf->at(i));
-
+    //std::cout << "size of wf= " << rawwf.size() << std::endl;
       //Check for empty waveforms!
     if(rawwf->ADCs().size()<1){
       print(msg::kERROR,__FUNCTION__,
@@ -381,6 +381,7 @@ return;
            first_tick = (float)*t;
        }
            postHuffwords += 2; //1 extra word for first word (non-Huffman coded), and 1 extra word for last sample (also non-Huffman coded)
+           //std::cout << "computed huff words: " << postHuffwords << std::endl;
 }      
    // std::cout << "Amt of p-huffman words is " << postHuffwords << std::endl;
     return postHuffwords;

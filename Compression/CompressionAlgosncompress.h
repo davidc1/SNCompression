@@ -31,7 +31,7 @@ namespace compress {
     void ApplyCompression(const std::vector<short> &waveform, const int mode, const UInt_t ch);
 
     /// Function that determines if we passed the threshold. Per plane
-    bool PassThreshold(double thisADC, double base);
+    bool PassThreshold(double thisADC, double base, double _thr, int _polar);
 
     void EndProcess(TFile* fout);
 
@@ -48,8 +48,6 @@ namespace compress {
     void SetVplaneBuffer(int pre, int post) { _buffer[1][0] = pre; _buffer[1][1] = post; }
     void SetYplaneBuffer(int pre, int post) { _buffer[2][0] = pre; _buffer[2][1] = post; }
     void SetUVYplaneBuffer(int upre, int upost, int vpre, int vpost, int ypre, int ypost);
-    //Anya function
-    int ApplyHuffman(double thisTick, double nextTick);
     // Decide if to fill tree with info or not
     void SetFillTree(bool on) { _fillTree = on; }
 
@@ -62,7 +60,7 @@ namespace compress {
     double _deltaV; // max difference for Variance tolerated
     std::vector<double> _thresh;
     std::vector<int> _pol;
-    
+    double thr;    
 
 
     // Buffer Tick number for various planes

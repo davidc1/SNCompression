@@ -93,6 +93,7 @@ namespace compress {
   void CompressionAlgosncompress::ApplyCompression(const std::vector<short> &waveform, const int mode, const UInt_t ch){
     
     _channel = ch;//Anya edit
+    thr = _thresh[ch];
     // iterator to the beginning and end of the waveform
     _begin = waveform.begin();
     _end   = waveform.end();
@@ -323,7 +324,7 @@ namespace compress {
 	double thisADC = *t;
 	if (thisADC-base > _max) { _max = thisADC-base; }
 	
-	if ( PassThreshold(thisADC, base) ){
+	if ( PassThreshold(thisADC, base, thr, _pol[_pl]) ){
 	  if (_verbose) { std::cout << "+ "; }
 	  _save = 1;
 	  // yay -> active
@@ -394,34 +395,31 @@ while(thresh_file.good()){
 //     std::cout << "channel " << a << " threshold= " << b << " vector " << _thresh[a-1] << std::endl;
 }
 thresh_file.close();
-
-for(int j=0; j<_thresh.size() ;j++){
 //std::cout << "channel.v " << j << " threshold.v= " << _thresh[j] << std::endl;
-}
 
 }
 
-  bool CompressionAlgosncompress::PassThreshold(double thisADC, double base){
-
+  bool CompressionAlgosncompress::PassThreshold(double thisADC, double base, double _thr, int _polar){
+    /*
     //BEGIN ANYA EDIT    
-    for(int _a=0; _a<8256; _a++){
-    if( _a<2400) {_pl=0;}
-    if( _a>=2400 && _a<4800 ){_pl=1;}
-    if( _a>=4800 ){ _pl=2; } 
+    if( _chnl<2400) {_pl=0;}
+    if( _chnl>=2400 && _chnl<4800 ){_pl=1;}
+    if( _chnl>=4800 ){ _pl=2; } 
+    */
+    
 
-
-    if (_pol[_pl] == 0){ //unipolar setting set at command line
+    if (_polar == 0){ //unipolar setting set at command line
 
         //if positive threshold
-	  if (_thresh[_a] >= 0){
-          if (thisADC > base + _thresh[_a])
+	  if (_thr >= 0){
+          if (thisADC > base + _thr)
     //      std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
        }
 
 	// if negative threshold
         else{
-          if (thisADC < base + _thresh[_a])
+          if (thisADC < base + _thr)
       //         std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
     	return true;
         }
@@ -429,16 +427,16 @@ for(int j=0; j<_thresh.size() ;j++){
 	  }
 
     else { //bipolar setting set at command line
-      if  (thisADC >= base + std::abs(_thresh[_a])) {
+      if  (thisADC >= base + std::abs(_thr)) {
 	    return true;
 	  }
 
-      if (thisADC <= base - std::abs(_thresh[_a])) {
+      if (thisADC <= base - std::abs(_thr)) {
 	      return true;
 	    }
 	  }
     //END ANYA EDIT
-    }
+   
     return false;
   }
   
