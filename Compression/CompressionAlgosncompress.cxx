@@ -412,26 +412,26 @@ thresh_file.close();
 
         //if positive threshold
 	  if (_thr >= 0){
-          if (thisADC > base + _thr)
+          if (thisADC > (base + _thr)){
     //      std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
-    	return true;
+    	return true;}
        }
 
 	// if negative threshold
         else{
-          if (thisADC < base + _thr)
+          if (thisADC < (base + _thr)){
       //         std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
-    	return true;
+    	return true;}
         }
 
 	  }
 
     else { //bipolar setting set at command line
-      if  (thisADC >= base + std::abs(_thr)) {
+      if  (thisADC >= (base + std::abs(_thr))) {
 	    return true;
 	  }
 
-      if (thisADC <= base - std::abs(_thr)) {
+      if (thisADC <= (base - std::abs(_thr))) {
 	      return true;
 	    }
 	  }
