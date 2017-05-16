@@ -37,6 +37,8 @@ namespace larlite {
 
       auto const wf = ev_wf->at(i);
 
+      //std::cout << "CHANNEL " << wf.Channel() << std::endl;
+
       // get vector of ROIs
       auto const& ROIs = wf.SignalROI();
       
@@ -65,7 +67,9 @@ namespace larlite {
 	// if the ROI does not start during a quiet baseline region of the waveform
 	// then the baseline determination will be incorrect.
 
-	auto baseline = ROI.at(0);
+	//auto baseline = ROI.at(0);
+        size_t last = ROI.size()-1;
+        auto baseline = (ROI.at(0)+ROI.at((int)last))/2;
 
 	double amplitude = 0;
 	double area      = 0;
@@ -81,11 +85,15 @@ namespace larlite {
 
 	}// for all ADC ticks in waveform
 
-	//if (amplitude < 100) continue;
+	if (amplitude <= 0) continue;
+	if (amplitude < _min_ampl) continue;
 
 	// grab the start time of the ROI w.r.t. the beginning of the 1st frame in the
 	// event.
 	auto ROIstart = ROI.begin_index();
+
+	//std::cout << "\t\t Hit start time = " << ROIstart << " @ wire " << wf.Channel()
+	//	  << " @ amplitude " << amplitude <<  std::endl;
 
 	// we now have all the information needed to create a new hit
 	larlite::hit hit;
@@ -97,7 +105,6 @@ namespace larlite {
 	hit.set_integral(area,0.);
 
 	// set wire information
-
 	auto ch         = wf.Channel();
 	auto const view = larutil::Geometry::GetME()->View(ch);
 	auto const pl   = larutil::Geometry::GetME()->ChannelToPlane(ch);
@@ -112,6 +119,7 @@ namespace larlite {
 	ev_hits->push_back(hit);
 	
       }// for all ROIs in the wire
+
     }// loop thrugh wires
 
     return true;

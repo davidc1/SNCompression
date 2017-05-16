@@ -28,11 +28,12 @@ my_proc.set_output_file("sn_hits.root")
 
 hitmaker = fmwk.SNHitReco()
 hitmaker.SetWireProducer("caldata")
-hitmaker.SetHitProducer("snhit")
+hitmaker.SetHitProducer("snhit2")
+hitmaker.SetMinAmplitude(10)
 my_proc.add_process(hitmaker)
 
-my_proc.set_data_to_write(fmwk.data.kHit,'snhit')
-my_proc.set_data_to_write(fmwk.data.kWire,'caldata')
+#my_proc.set_data_to_write(fmwk.data.kHit,'snhit')
+#my_proc.set_data_to_write(fmwk.data.kWire,'caldata')
 #my_proc.set_data_to_write(fmwk.data.kRawDigit,'daq')
 
 
@@ -41,7 +42,7 @@ print
 print  "Finished configuring ana_processor. Start event loop!"
 print
 
-my_proc.run()
+my_proc.run(0,1)
 
 sys.exit()
 

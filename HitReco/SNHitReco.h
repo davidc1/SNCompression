@@ -40,11 +40,14 @@ namespace larlite {
 
     void SetWireProducer(std::string s) {_wire_producer = s; }
     void SetHitProducer (std::string s) {_hit_producer  = s; }
+    void SetMinAmplitude(float n) { _min_ampl = n; }
 
   protected:
 
     std::string _wire_producer;
     std::string _hit_producer;
+
+    float _min_ampl;
     
   };
 }
