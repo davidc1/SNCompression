@@ -77,7 +77,7 @@ namespace larlite {
 
     /// Calculate compression: keep holders for number of ticks in original waveform and number of ticks in compressed waveforms
     void CalculateCompression(const std::vector<short> &beforeADCs,
-			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges, int postHuff, 
+			      const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff, 
 			      int pl, int ch);
 
     /// Decide here if to save output
@@ -110,11 +110,11 @@ namespace larlite {
     /// Now filll output WFs information into larlite data product so that we can write to output
     void SwapData(const larlite::rawdigit* tpc_data,
 		  const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
-
-    /// calculate Huffman compression (returns number of huffman words saved)
     int HuffmanCompression(const larlite::rawdigit* tpc_data,
-			   const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
+                           const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
     void ReadoutTicks( const std::vector<std::pair< compress::tick, compress::tick> > &ranges);
+
+
     // check if chanels is in range
     bool isinrange(unsigned int ch);
     
@@ -170,7 +170,6 @@ namespace larlite {
     int    _pl;
     // keep track of number of wires scanned per plane (to calculate compession)
     int _NplU, _NplV, _NplY;
-	//Anya variables:
     double _compression_huff;
     double _compressionU_huff;
     double _compressionV_huff;

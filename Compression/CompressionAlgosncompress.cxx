@@ -8,7 +8,6 @@
 #include <cstring>
 #include <fstream>
 
-
 namespace compress {
   
 
@@ -22,8 +21,8 @@ namespace compress {
     //_buffer[0].reserve(2);
     //_buffer[1].reserve(2);
     //_buffer[2].reserve(2);
-    _thresh = std::vector<double>(8256,0.);//(3,0.)
-    _pol = std::vector<int>(3,0.);
+    _thresh = std::vector<double>(8256,0.);
+    _pol    = std::vector<int>(3,0);
     //_thresh.reserve(3);
     std::vector<std::vector<int> > tmp(3,std::vector<int>(2,0));
     _buffer = tmp;
@@ -34,7 +33,6 @@ namespace compress {
     if (_algo_tree) { delete _algo_tree; }
     _algo_tree = new TTree("_algo_tree","Algorithm-specific Tree");
     _algo_tree->Branch("_pl",&_pl,"pl/I");
-    _algo_tree->Branch("_ch",&_ch,"ch/I");
     _algo_tree->Branch("_v1",&_v1,"v1/I");
     _algo_tree->Branch("_v2",&_v2,"v2/I");
     _algo_tree->Branch("_v3",&_v3,"v3/I");
@@ -43,40 +41,8 @@ namespace compress {
     _algo_tree->Branch("_b3",&_b3,"b3/I");
     _algo_tree->Branch("_max",&_max,"max/D");
     _algo_tree->Branch("_save",&_save,"save/I");
- 
-//Anya edit: new variables: differences between b1/v1 and b2/v2 & b3/v3 during scan
-    _algo_tree->Branch("_delb12",&_delb12,"delb12/I");
-    _algo_tree->Branch("_delb13",&_delb13,"delb13/I");
-    _algo_tree->Branch("_delv12",&_delv12,"delv12/I");
-    _algo_tree->Branch("_delv13",&_delv13,"delv13/I");
-    _algo_tree->Branch("_baseline_vals",&_baseline_vals,"baseline_vals/I");  
-    _algo_tree->Branch("_variance_vals",&_variance_vals,"variance_vals/I");  
-//U plane
-    _algo_tree->Branch("_delb12u",&_delb12u,"delb12u/I");
-    _algo_tree->Branch("_delb13u",&_delb13u,"delb13u/I");
-    _algo_tree->Branch("_delv12u",&_delv12u,"delv12u/I");
-    _algo_tree->Branch("_delv13u",&_delv13u,"delv13u/I");
-    _algo_tree->Branch("_baseline_vals_u",&_baseline_vals_u,"baseline_vals_u/I");
-    _algo_tree->Branch("_variance_vals_u",&_variance_vals_u,"variance_vals_u/I");   
-//V plane
-    _algo_tree->Branch("_delb12v",&_delb12v,"delb12v/I");
-    _algo_tree->Branch("_delb13v",&_delb13v,"delb13v/I");
-    _algo_tree->Branch("_delv12v",&_delv12v,"delv12v/I");
-    _algo_tree->Branch("_delv13v",&_delv13v,"delv13v/I");
-    _algo_tree->Branch("_baseline_vals_v",&_baseline_vals_v,"baseline_vals_v/I");  
-    _algo_tree->Branch("_variance_vals_v",&_variance_vals_v,"variance_vals_v/I");  
-//Y plane
-    _algo_tree->Branch("_delb12y",&_delb12y,"delb12y/I");
-    _algo_tree->Branch("_delb13y",&_delb13y,"delb13y/I");
-    _algo_tree->Branch("_delv12y",&_delv12y,"delv12y/I");   
-    _algo_tree->Branch("_delv13y",&_delv13y,"delv13y/I");
-    _algo_tree->Branch("_baseline_vals_y",&_baseline_vals_y,"baseline_vals_y/I");  
-    _algo_tree->Branch("_variance_vals_y",&_variance_vals_y,"variance_vals_y/I");  
-        
-    _algo_tree->Branch("_channel",&_channel,"channel/I");
-    _algo_tree->Branch("_postHuffmanwords",&_postHuffmanwords,"postHuffmanwords/I");
- }
-
+    
+  }
   
   void CompressionAlgosncompress::SetUVYplaneBuffer(int upre, int upost, int vpre, int vpost, int ypre, int ypost){
     
@@ -89,11 +55,13 @@ namespace compress {
     return;
   }
   
-   
+  
   void CompressionAlgosncompress::ApplyCompression(const std::vector<short> &waveform, const int mode, const UInt_t ch){
-    
-    _channel = ch;//Anya edit
-    thr = _thresh[ch];
+ //Anya variables
+    _channel = ch;
+    thr = _thresh[ch];   
+
+ 
     // iterator to the beginning and end of the waveform
     _begin = waveform.begin();
     _end   = waveform.end();
@@ -117,36 +85,39 @@ namespace compress {
     // start & end tick for each Region Of Interest (ROI) saved
     tick s;
     tick e;
-    std::pair<tick,tick> thisRange;     
-   
+    std::pair<tick,tick> thisRange; 
+    
     _pl = mode;
 
     for (size_t n = 0; n < waveform.size(); n++) {
+
       _thisTick = _begin + n;
 
+      // have we reached the end of a segment?
       if (n % (_block - 1) == 0){
 
+	// is this the 1st block? if so calculate mean and variance
 	if ( (n + 1 - _block) == 0){
-          int baseline = 0;
-          int var      = 0;
-          int diff     = 0;
-          tick t = _thisTick - _block +1;
-          int mm = 0;
-          for (; t < _thisTick + 1; t++){
-            baseline += *t;
-            mm += 1;
-          }
-          baseline /= _block;
-          t = _thisTick - _block + 1;
-          for(; t < _thisTick + 1; t++){
-            diff = ( (*t) - baseline ) * ( (*t) - baseline );
-            if (diff < 4095) var += diff;
-            else var += 4095;
-          }
-          var = var >> 6;
-          _baseline[1] = baseline;
-          _variance[1] = var;
-          
+	  int baseline = 0;
+	  int var  = 0;
+	  int diff = 0;
+	  tick t = _thisTick - _block + 1;
+	  int mm = 0;
+	  for (; t < _thisTick + 1; t++){
+	    baseline += *t;
+	    mm += 1;
+	  }
+	  baseline /= _block;
+	  t = _thisTick - _block + 1;
+	  for (; t < _thisTick + 1; t++){
+	    diff = ( (*t) - baseline ) * ( (*t) - baseline );
+	    if (diff < 4095) var += diff;
+	    else var += 4095;
+	  }
+	  var = var >> 6;
+	  _baseline[1] = baseline;
+	  _variance[1] = var;
+
 	  baseline = 0;
 	  var      = 0;
 	  diff     = 0;
@@ -165,13 +136,6 @@ namespace compress {
 	  var = var >> 6;
 	  _baseline[2] = baseline;
 	  _variance[2] = var;
-
-//Anya variables
-      _baseline_vals = _baseline[0];
-      _baseline_vals = _baseline[0];
-      _variance_vals = _variance[1];
-      _variance_vals = _variance[1];
-
 	}// 1st block updating
 
 	// always compute baseline and variance for next block, if it exists
@@ -204,70 +168,11 @@ namespace compress {
 	  _baseline[2] = baseline;
 	  _variance[2] = var;
 
-     
-          //Anya edit: variables delta b_12, delta b_13, delta v_12, delta v_13
-          
-          _delb12 = _baseline[1] - _baseline[0];//b_2-b_1
-          _delb13 = baseline - _baseline[0];//b_3-b_1
-          _delv12 = _variance[1] - _variance[0];//v_2-v_1   
-          _delv13 = var - _variance[0];//v_3-v_1
-          
-          _baseline_vals = baseline;
-          _variance_vals = var;
-          
-          //U plane
-          if (_pl==0){
-          _baseline_vals_u = baseline;
-          _variance_vals_u = var;
-          
-          _delb12u = _baseline[1] - _baseline[0];//b_2-b_1
-          _delb13u = baseline - _baseline[0];//b_3-b_1
-          _delv12u = _variance[1] - _variance[0];//v_2-v_1   
-          _delv13u = var - _variance[0];//v_3-v_1
-          
-          }
-          //V plane
-          if (_pl==1){
-          _baseline_vals_v = baseline;
-          _variance_vals_v = var;
-          
-          _delb12v = _baseline[1] - _baseline[0];//b_2-b_1
-          _delb13v = baseline - _baseline[0];//b_3-b_1
-          _delv12v = _variance[1] - _variance[0];//v_2-v_1   
-          _delv13v = var - _variance[0];//v_3-v_1
-           }
-          //Y plane
-          if (_pl==2) {
-          _baseline_vals_y = baseline;
-          _variance_vals_y = var;
-          
-          _delb12y = _baseline[1] - _baseline[0];//b_2-b_1
-          _delb13y = baseline - _baseline[0];//b_3-b_1
-          _delv12y = _variance[1] - _variance[0];//v_2-v_1   
-          _delv13y = var - _variance[0];//v_3-v_1
-          }
+	}// if we are updating the NEXT block
 
-//std::vector<double> ax;
-//std::vector<double> entries;
-//std::vector<int> channels;
-//for (int z =0; z<8256; z++){
-//	if (_ch=z){
-// 	entries.pushback(variance);
-//	channels.pushback(z);
-//	}
-//ax.pushback(entries);
-//}
-
-
-
-
-        }// if we are updating the NEXT block
-
-         if (_debug){
-          std::cout << "Baseline. Block 1: " << _baseline[0] << "\tBlock 2: " << _baseline[1] << "\tBlock 3: " << _baseline[2] << std::endl;
+	if (_debug){
+	  std::cout << "Baseline. Block 1: " << _baseline[0] << "\tBlock 2: " << _baseline[1] << "\tBlock 3: " << _baseline[2] << std::endl;
 	  std::cout << "Variance. Block 1: " << _variance[0] << "\tBlock 2: " << _variance[1] << "\tBlock 3: " << _variance[2] << std::endl;
-
-
 	}
 
 
@@ -292,13 +197,7 @@ namespace compress {
       _b2 = _baseline[1];
       _b3 = _baseline[2];
 
-
-
-
-
-
-
-
+      
       if ( (_baselineMap.find(ch) != _baselineMap.end()) ){
 	
 	double base = _baselineMap[ch];
@@ -338,9 +237,9 @@ namespace compress {
 	    if (_verbose) { std::cout << "found start-tick " << s-_begin << std::endl; }
 	  }
 	  // add bin content to temporary output waveform
- 	  outputwf.push_back(*t);
-	  //std::cout << "size of outputwf is " << outputwf.size() << std::endl;
-          }
+	  outputwf.push_back(*t);
+	}
+	
 	else{
 	  // we are in a sub-threshold region.
 	  // 2 possibilities:
@@ -384,59 +283,51 @@ namespace compress {
 
 void CompressionAlgosncompress::SetCompressThresh(std::string th_file){
 std::ifstream thresh_file(th_file.c_str());
+
 int a;
 std::string e,g;
 double b,c,d,f;
-//std::cout << "th_file " << 
 
 while(thresh_file.good()){
      thresh_file >> a >> b >> c >> d >> e >> f >> g;
-     _thresh[a-1] = b;
-//     std::cout << "channel " << a << " threshold= " << b << " vector " << _thresh[a-1] << std::endl;
+     _thresh[a-1] = b; 
 }
 thresh_file.close();
-//std::cout << "channel.v " << j << " threshold.v= " << _thresh[j] << std::endl;
 
 }
 
-  bool CompressionAlgosncompress::PassThreshold(double thisADC, double base, double _thr, int _polar){
-    /*
-    //BEGIN ANYA EDIT    
-    if( _chnl<2400) {_pl=0;}
-    if( _chnl>=2400 && _chnl<4800 ){_pl=1;}
-    if( _chnl>=4800 ){ _pl=2; } 
-    */
-    
+  bool CompressionAlgosncompress::PassThreshold(double thisADC, double base,double _thr, int _polar){
+
+
+    //BEGIN ANYA EDIT
 
     if (_polar == 0){ //unipolar setting set at command line
 
         //if positive threshold
-	  if (_thr >= 0){
+	  if (_thresh[_pl] >= 0){
           if (thisADC > (base + _thr)){
-    //      std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
-    	return true;}
+    	     return true;}
        }
 
 	// if negative threshold
         else{
           if (thisADC < (base + _thr)){
-      //         std::cout << "thisADC " << thisADC << " base+thresh " << base + _thresh[_a] << std::endl;
-    	return true;}
+        	return true;}
         }
 
 	  }
 
     else { //bipolar setting set at command line
-      if  (thisADC >= (base + std::abs(_thr))) {
+	  if  (thisADC >= (base + std::abs(_thr))) {
 	    return true;
 	  }
 
-      if (thisADC <= (base - std::abs(_thr))) {
+	  if (thisADC <= (base - std::abs(_thr))) {
 	      return true;
 	    }
 	  }
-    //END ANYA EDIT
-   
+
+    
     return false;
   }
   
