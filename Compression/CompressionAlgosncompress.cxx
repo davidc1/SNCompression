@@ -231,6 +231,7 @@ namespace compress {
 	  }
 	  // add bin content to temporary output waveform
 	  outputwf.push_back(*t);
+          //std::cout << "size of outputwf is " << outputwf.size() << std::endl;
 	}
 	
 	else{
@@ -249,6 +250,8 @@ namespace compress {
 	      std::cout << "saving [" << s-_begin << ", " << e-_begin << "]" << std::endl;
 	    }
 	    // if the beginning is before the end of the previous section -> just expand
+
+	    //std::cout << "saving [" << s-_begin << ", " << e-_begin << "]" << std::endl;
 	    if (_timeRange.size() > 0){
 	      if (s < _timeRange.back().second){
 		// this new range starts before the last one ends -> edit the last one
@@ -277,103 +280,34 @@ namespace compress {
 
   bool CompressionAlgosncompress::PassThreshold(double thisADC, double base){
 
-    // if positive threshold
-    // if (_thresh[_pl] >= 0){
-    //      if (thisADC > base + _thresh[_pl])
-    //	return true;
-    //   }
-	// if negative threshold
-    //    else{
-    //      if (thisADC < base + _thresh[_pl])
-    //	return true;
-    //    }
-
-    //BEGIN ANYA EDIT
 
     if (_pol[_pl] == 0){ //unipolar setting set at command line
 
         //if positive threshold
 	  if (_thresh[_pl] >= 0){
-          if (thisADC > base + _thresh[_pl])
-    	return true;
+          if (thisADC > (base + _thresh[_pl])){
+    	return true;}
        }
 
 	// if negative threshold
         else{
-          if (thisADC < base + _thresh[_pl])
-    	return true;
+          if (thisADC < (base + _thresh[_pl])){
+    	return true;}
         }
 
 	  }
 
     else { //bipolar setting set at command line
-	  if  (thisADC >= base + _thresh[_pl]) {
+	  if  (thisADC >= (base + _thresh[_pl])) {
 	    return true;
 	  }
 
-	  if (thisADC <= base - _thresh[_pl]) {
+	  if (thisADC <= (base - _thresh[_pl])) {
 	      return true;
 	    }
 	  }
 
-    // //  Plane V
 
-    // if (ubV = 0){ //unipolar setting set at command line
-
-    //     //if positive threshold
-    // 	  if (_thresh[1] >= 0){
-    //       if (thisADC > base + _thresh[1])
-    // 	return true;
-    //    }
-
-    // 	// if negative threshold
-    //     else{
-    //       if (thisADC < base + _thresh[1])
-    // 	return true;
-    //     }
-
-    // 	  }
-
-    // else if(ubV = 1) { //bipolar setting set at command line
-    // 	  if  (thisADC >= base + _thresh[1]) {
-    // 	    return true;
-    // 	  }
-
-    // 	  if (thisADC <= base - _thresh[1]) {
-    // 	      return true;
-    // 	    }
-    // 	  }
-
-    // //  Plane Y
-
-    // if (ubY = 0){ //unipolar setting set at command line
-
-    //     //if positive threshold
-    // 	  if (_thresh[2] >= 0){
-    //       if (thisADC > base + _thresh[2])
-    // 	return true;
-    //    }
-
-    // 	// if negative threshold
-    //     else{
-    //       if (thisADC < base + _thresh[2])
-    // 	return true;
-    //     }
-
-    // 	  }
-
-    // else if(ubY = 1) { //bipolar setting set at command line
-    // 	  if  (thisADC >= base + _thresh[2]) {
-    // 	    return true;
-    // 	  }
-
-    // 	  if (thisADC <= base - _thresh[2]) {
-    // 	      return true;
-    // 	    }
-    // 	  }
-    
-    //END ANYA EDIT
-    
     return false;
   }
   
