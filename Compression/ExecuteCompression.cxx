@@ -222,6 +222,7 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
+    //std::cout << "applied compression. " << ranges.size() << " ranges found" << std::endl;
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -331,6 +332,7 @@ namespace larlite {
     _ch_compression = outTicks/inTicks;
 
     _compression += outTicks/inTicks;
+    //std::cout << "outTicks " << outTicks << " inTicks: " << inTicks << std::endl;
 
     _ch = ch;
     _pl = pl;
