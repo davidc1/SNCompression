@@ -28,7 +28,8 @@ namespace larlite {
     _compress_tree->Branch("_compressionU",&_compressionU,"compressionU/D");
     _compress_tree->Branch("_compressionV",&_compressionV,"compressionV/D");
     _compress_tree->Branch("_compressionY",&_compressionY,"compressionY/D");
-
+    //Anya variables: 
+ 
     _compress_tree->Branch("_compression_huff",&_compression_huff,"compression_huff/D");
     _compress_tree->Branch("_compressionU_huff",&_compressionU_huff,"compressionU_huff/D");
     _compress_tree->Branch("_compressionV_huff",&_compressionV_huff,"compressionV_huff/D");
@@ -38,7 +39,7 @@ namespace larlite {
     if (_compress_ch) delete _compress_ch;
     _compress_ch = new TTree("_compress_ch","Channel-by-Channel Compress. Tree");
     _compress_ch->Branch("_ch_compression",&_ch_compression,"ch_compression/D");
-    _compress_ch->Branch("_ch_compression_huff",&_ch_compression_huff,"ch_compression_huff/D");
+    _compress_ch->Branch("_ch_compression_huff",&_ch_compression_huff,"ch_compression_huff/D");//Anya variable
     _compress_ch->Branch("_ch",&_ch,"ch/I");
     _compress_ch->Branch("_pl",&_pl,"pl/I");
 
@@ -47,6 +48,12 @@ namespace larlite {
     _compressionY = 0;
     _compression  = 0;
     _NplU = _NplV = _NplY = 0;
+    //Anya variables
+    _compressionU_huff = 0;
+    _compressionV_huff = 0;
+    _compressionY_huff = 0;
+    _compression_huff  = 0;
+    _huffman_gain = 0;
 
     _evt = 0;
 
@@ -104,6 +111,7 @@ namespace larlite {
     // reset variables that hold compression factor
     _inTicks  = 0;
     _outTicks = 0;
+    //_postHuffTicks = 0; //Anya variable
 
     // if we want to use the viewer -> skip this
     if (_compress_view)
@@ -122,17 +130,15 @@ namespace larlite {
     _compressionV /= 2399.;//_NplV;
     _compressionY /= 3456.;//_NplY;
     _compression  /= (2399.+2399.+3456.);//(_NplU+_NplV+_NplY);
-
     _compressionU_huff /= 2399.;//_NplU;
-    _compressionV_huff /= 2399.;//_NplU;
-    _compressionY_huff /= 3456.;//_NplU;
+    _compressionV_huff /= 2399.;//_NplV;
+    _compressionY_huff /= 3456.;//_NplY;
     _compression_huff  /= (2399.+2399.+3456.);//(_NplU+_NplV+_NplY);
 
     _compress_tree->Fill();
-
-    _compressionU_huff = _compressionV_huff = _compressionY_huff = 0;
     _NplU = _NplV = _NplY = 0;
     _compressionU = _compressionV = _compressionY = 0;
+    _compression_huff = _compressionU_huff = _compressionV_huff = _compressionY_huff = 0;
 
     /*
     //now take new WFs and place in event_wf vector
@@ -203,7 +209,7 @@ namespace larlite {
   {
 
     const larlite::rawdigit* rawwf = &(_event_wf->at(i));
-
+    //std::cout << "size of wf= " << rawwf.size() << std::endl;
       //Check for empty waveforms!
     if(rawwf->ADCs().size()<1){
       print(msg::kERROR,__FUNCTION__,
@@ -225,7 +231,6 @@ namespace larlite {
     // 1) Convert tpc_data object to just the vector of shorts which make up the ADC ticks
     _watch.Start();
     const std::vector<short> ADCwaveformL = rawwf->ADCs();
-
     // cut size so that 3 blocks fit perfectly
     int nblocks = ADCwaveformL.size()/(3*64);
     std::vector<short>::const_iterator first = ADCwaveformL.begin();
@@ -238,6 +243,7 @@ namespace larlite {
     _time_algo += _watch.RealTime();
     // 3) Retrieve output ranges saved
     auto const& ranges = _compress_algo->GetOutputRanges();
+       // std::cout << "applied compression. " << ranges.size() << " ranges found" << std::endl;
     // 6) Study the Compression results for this channel
     _watch.Start();
     if (_compress_study)
@@ -265,13 +271,13 @@ namespace larlite {
     }
     // 9) Calculate compression factor [ for now Ticks After / Ticks Before ]
     _watch.Start();
-    _postHuffwords = HuffmanCompression(rawwf, ranges);
+    _postHuffwords = HuffmanCompression(rawwf,ranges);
     ReadoutTicks(ranges);
-    CalculateCompression(ADCwaveform, ranges,_postHuffwords, pl, ch);
+    CalculateCompression(ADCwaveform, ranges, _postHuffwords, pl, ch);
     _time_calc += _watch.RealTime();
     // 10) clear _InWF and _OutWF from compression algo object -> resetting algorithm for next time it is called
     _compress_algo->Reset();
-    // 11) Replace .root data file *event_wf* with new waveforms
+    // 12) Replace .root data file *event_wf* with new waveforms
     _watch.Start();
     if (_saveOutput)
       SwapData(rawwf, ranges);
@@ -320,55 +326,74 @@ namespace larlite {
     return;
   }
 
-  int ExecuteCompression::HuffmanCompression(const larlite::rawdigit *tpc_data, const std::vector<std::pair< compress::tick, compress::tick> > &ranges){
+  void ExecuteCompression::ReadoutTicks(const std::vector<std::pair< compress::tick, compress::tick> > &ranges) {
+    compress::tick t;
+    for (size_t n=0 ; n < ranges.size() ; n++) {
+        t = ranges[n].first;
+//       std::cout << "this tick = " <<*t << " " << std::endl;
+    }
 
-int postHuffwords = 0;
-int postHuffmanbits = 0;
-const int availablewordbits = 15;
-
-for(size_t n=0; n < ranges.size(); n++){
-  compress::tick t;
-  float first_tick = (float)*(ranges[n].first);
-  for (t = (ranges[n].first + 1); t <= ranges[n].second; t++) {
-	if( ((float)*t - first_tick == 0 )){
-	  if( ( postHuffmanbits + 1) <= availablewordbits){ postHuffmanbits += 1; }
-	  else{postHuffwords += 1; postHuffmanbits = 1; }}
-	else if( ((float)*t - first_tick == -1 )){
-	  if( ( postHuffmanbits + 2) <= availablewordbits){ postHuffmanbits += 2; }
-	  else{postHuffwords += 1; postHuffmanbits = 2; }}
-	else if( ((float)*t - first_tick == 1 )){
-	  if( ( postHuffmanbits + 3) <= availablewordbits){ postHuffmanbits += 3; }
-	  else{postHuffwords += 1; postHuffmanbits = 3; }}
-	else if( ((float)*t - first_tick == -2 )){
-	  if( ( postHuffmanbits + 4) <= availablewordbits){ postHuffmanbits += 4; }
-	  else{postHuffwords += 1; postHuffmanbits = 4; }}
-	else if( ((float)*t - first_tick == 2 )){
-	  if( ( postHuffmanbits + 5) <= availablewordbits){ postHuffmanbits += 5; }
-	  else{postHuffwords += 1; postHuffmanbits = 5; }}
-	else if( ((float)*t - first_tick == -3 )){
-	  if( ( postHuffmanbits + 6) <= availablewordbits){ postHuffmanbits += 6; }
-	  else{postHuffwords += 1; postHuffmanbits = 6; }}
-	else if( ((float)*t - first_tick == 3 )){
-	  if( ( postHuffmanbits + 7) <= availablewordbits){ postHuffmanbits += 7; }
-	  else{postHuffwords += 1; postHuffmanbits = 7; }}
-        else if( ((float)*t - first_tick) > 3 || ((float)*t - first_tick < -3 )) {postHuffwords += 1; postHuffmanbits = 15; }
-        first_tick = (float)*t;
-        }
-        postHuffwords += 2;
+     //   std::cout << ranges.size() << " = sizeof waveform" << std::endl;
+return;
 }
-return postHuffwords;
-}
+  int ExecuteCompression::HuffmanCompression(const larlite::rawdigit *tpc_data,
+					     const std::vector<std::pair< compress::tick, compress::tick> > &ranges)
+  {
 
+    int postHuffwords = 0; //2*(ranges.size());
+    int postHuffmanbits = 0;
+    const int availablewordbits = 15;
+    //std::vector<float> out;
+ //   std::cout<< "size of ranges is " << ranges.size() << std::endl;
+       for (size_t n=0; n < ranges.size(); n++){
+         compress::tick t;
+         float first_tick = (float)*(ranges[n].first);
+         for (t = (ranges[n].first + 1); t <= ranges[n].second; t++) {
+        	//out.push_back( (float)*t - first_tick );
+        	//if(t==ranges[n].first){std::cout<< "ROI = " << n << std::endl;}
+        	//if(t==ranges[n].first){std::cout << "first tick has passed" << std::endl;}
 
-
-
+        //std::cout << "this tick " <<" value = " << (float)*t << " ADCs" << " difference from last tick = "<< ((float)*t-first_tick)<< std::endl; 
+     //   std::cout<< (float)*t << ", "; 
+       
+           if ( ((float)*t - first_tick) == 0 ){ 
+            if ( (postHuffmanbits + 1) <= availablewordbits) { postHuffmanbits += 1; }   
+            else {postHuffwords += 1; postHuffmanbits = 1; }}                         
+           else if ( ((float)*t - first_tick) ==-1 ){                                      
+             if ((postHuffmanbits + 2) <= availablewordbits ) { postHuffmanbits += 2; }  
+             else{ postHuffwords += 1; postHuffmanbits = 2; }}                        
+           else if ( ((float)*t - first_tick) == 1 ){                                      
+            if ((postHuffmanbits + 3) <= availablewordbits ) { postHuffmanbits += 3; }   
+             else{ postHuffwords += 1; postHuffmanbits = 3;  }}                       
+           else if ( ((float)*t - first_tick) ==-2 ){                                      
+            if ((postHuffmanbits + 4) <= availablewordbits ) { postHuffmanbits += 4; }   
+             else{ postHuffwords += 1; postHuffmanbits = 4;  }}                       
+           else if ( ((float)*t - first_tick) == 2 ){                                      
+            if ((postHuffmanbits + 5) <= availablewordbits ) { postHuffmanbits += 5; }   
+             else{ postHuffwords += 1; postHuffmanbits = 5;  }}                       
+           else if ( ((float)*t - first_tick) ==-3 ){                                      
+            if ((postHuffmanbits + 6) <= availablewordbits ) { postHuffmanbits += 6; }   
+             else{ postHuffwords += 1; postHuffmanbits = 6;  }}                       
+           else if ( ((float)*t - first_tick) == 3 ){                                      
+            if ((postHuffmanbits + 7) <= availablewordbits ) { postHuffmanbits += 7; }   
+             else{ postHuffwords += 1; postHuffmanbits = 7;  }}                       
+           else if ( ((float)*t - first_tick) > 3 || ((float)*t - first_tick) < -3 ) { postHuffwords += 1; postHuffmanbits = 15; }
+           first_tick = (float)*t;
+       }
+           postHuffwords += 2; //1 extra word for first word (non-Huffman coded), and 1 extra word for last sample (also non-Huffman coded)
+           //std::cout << "computed huff words: " << postHuffwords << std::endl;
+}      
+   // std::cout << "Amt of p-huffman words is " << postHuffwords << std::endl;
+    return postHuffwords;
+  }
+  
   void ExecuteCompression::CalculateCompression(const std::vector<short> &beforeADCs,
-						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff,
+						const std::vector<std::pair< compress::tick, compress::tick> > &ranges,int postHuff, 
 						int pl, int ch){
     
     double inTicks = beforeADCs.size();
     double outTicks = 0;
-    
+
     for (size_t n=0; n < ranges.size(); n++)
       outTicks += (ranges[n].second-ranges[n].first);
 
@@ -387,27 +412,34 @@ return postHuffwords;
     else
       std::cout << "What plane? Error?" << std::endl;
  
-   if(pl==0){
-      _compressionU_huff += postHuff/inTicks;  }
-   if(pl==1)  {
-      _compressionV_huff += postHuff/inTicks;}
-   if(pl==2){
-      _compressionY_huff += postHuff/inTicks;	}
-   
+    if (pl==0){
+      _compressionU_huff += postHuff/inTicks;
+    }
+    else if (pl==1){
+      _compressionV_huff += postHuff/inTicks;
+    }
+    else if (pl==2){
+      _compressionY_huff += postHuff/inTicks;
+    }
+    
     _ch_compression = outTicks/inTicks;
     _compression += outTicks/inTicks;
-    std::cout << "outTicks: " << outTicks << " inTicks: " << inTicks << std::endl;
+//    std::cout << "outTicks " << outTicks << " inTicks: " << inTicks << std::endl;
 
-   _huffman_gain = _compression/_compression_huff;
 
-   _ch_compression_huff = postHuff/inTicks;
-   _compression_huff += postHuff/inTicks;
+    _huffman_gain = _compression/_compression_huff;
+
+   // std::cout << "Pl : " << pl << "\t Ch : " << ch << "\t inTicks : " << inTicks << "\t outTicks : " << outTicks << "\t pstHuff : " << postHuff << std::endl;
+
+    //Anya variables:
+    _ch_compression_huff = postHuff/inTicks;
+    _compression_huff += postHuff/inTicks;
+    
 
 
     _ch = ch;
     _pl = pl;
     _compress_ch->Fill();
-
     return;
   }
 
